@@ -14,9 +14,13 @@ def timeout():
 
 def make_request(count, next_page=None):
     url = next_page or "https://api.github.com/search/repositories"
-    payload = {"q": query_params(), "page": next_page}
     # In case we want to know where a match occurs, if it were a term search.
     # headers = {"Accept": "application/vnd.github.v3.text-match+json"}
+
+    if next_page is None:
+        payload = {"q": query_params()}
+    else:
+        payload = {}
 
     res = requests.get(url, params=payload)
 
