@@ -50,13 +50,11 @@ class CodeCrawler:
 
 	def __init__(self):
 		try:
-			for index in range(1,129):
+			for index in range(1,32):
 				__file__ = 'data/repos/page'+ str(index)
 				with open(__file__, 'r') as jsonfile:
 					for item in json.load(jsonfile)['items']:
 						self.get_files(item['full_name'])
-						break
-				break
 		except:
 			traceback.print_exc()
 			pass
