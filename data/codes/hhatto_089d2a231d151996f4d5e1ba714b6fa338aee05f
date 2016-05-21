@@ -1,0 +1,282 @@
+@@ -0,0 +1,68 @@
++smartcrop.py
+
++============
+
++smartcrop implementation in Python
+
++
+
++smartcrop finds good crops for arbitrary images and crop sizes, based on Jonas Wagner's `smartcrop.js`_
+
++
+
++.. _`smartcrop.js`: https://github.com/jwagner/smartcrop.js
+
++
+
++.. image:: https://dl.dropboxusercontent.com/u/26471561/img/smartcroppy/bw.jpg
+
++    :width: 50%
+
++
+
++.. image:: https://dl.dropboxusercontent.com/u/26471561/img/smartcroppy/bw_out.jpg
+
++    :width: 25%
+
++
+
++.. image:: https://dl.dropboxusercontent.com/u/26471561/img/smartcroppy/bw_debug.jpg
+
++    :width: 50%
+
++
+
++Requirements
+
++------------
+
++* PIL or Pillow
+
++
+
++
+
++Installation
+
++------------
+
++.. code-block:: sh
+
++
+
++    pip install --upgrade git+https://github.com/hhatto/smartcrop.py.git
+
++
+
++
+
++Usage
+
++-----
+
++command-line tool
+
++
+
++.. code-block:: sh
+
++
+
++    smartcrop.py FILE
+
++
+
++use module
+
++
+
++.. code-block:: python
+
++
+
++    import sys
+
++    import json
+
++    from PIL import Image
+
++    import smartcrop
+
++
+
++    sc = smartcrop.SmartCrop()
+
++    crop_options = smartcrop.DEFAULTS
+
++    crop_options['width'] = 100
+
++    crop_options['height'] = 100
+
++
+
++    img = Image.open(sys.argv[1])
+
++    ret = sc.crop(img, crop_options)
+
++    print(json.dumps(ret, indent=2))
+
++
+
++
+
++smartcrop.py is slower than `smartcrop.js`_
+
++
+
++.. code-block:: sh
+
++
+
++    $ identify images/t.jpg
+
++    images/t.jpg JPEG 3200x2403 3200x2403+0+0 8-bit sRGB 2.066MB 0.000u 0:00.009
+
++    $ python smartcrop.py --width 300 --height 300 --debug images/t.jpg
+
++    python smartcrop.py --width 300 --height 300 --debug images/t.jpg  6.16s user 0.06s system 99% cpu 6.231 total
+
++
+
++License
+
++-------
+
++MIT
+@@ -0,0 +1,13 @@
++import sys
+
++import json
+
++from PIL import Image
+
++import smartcrop
+
++
+
++sc = smartcrop.SmartCrop()
+
++crop_options = smartcrop.DEFAULTS
+
++crop_options['width'] = 100
+
++crop_options['height'] = 100
+
++
+
++img = Image.open(sys.argv[1])
+
++ret = sc.crop(img, crop_options)
+
++print(json.dumps(ret, indent=2))
+@@ -0,0 +1,39 @@
++"""
+
++    smartcrop.py
+
++    ~~~~~~~~~~~~
+
++
+
++    smartcrop.js implementation in Python
+
++
+
++    :license: MIT
+
++"""
+
++
+
++from setuptools import setup
+
++
+
++setup(
+
++    name='smartcrop',
+
++    version='0.1',
+
++    description="smartcrop implementation in Python",
+
++    long_description=open('README.rst').read(),
+
++    author="Hideo Hattori",
+
++    author_email="hhatto.jp@gmail.com",
+
++    keywords=("image", "crop", "PIL", "Pillow"),
+
++    url = "https://github.com/hhatto/smartcrop.py",
+
++    include_package_data=True,
+
++    py_modules=['smartcrop'],
+
++    zip_safe=False,
+
++    platforms = 'any',
+
++    install_requires=['Pillow'],
+
++    license='MIT',
+
++    entry_points={
+
++        'console_scripts': ['smartcroppy = smartcrop:main'],
+
++    },
+
++    classifiers=[
+
++        'Development Status :: 3 - Alpha',
+
++        'License :: OSI Approved :: MIT License',
+
++        'Intended Audience :: Developers',
+
++        'Operating System :: OS Independent',
+
++        'Programming Language :: Python',
+
++        'Programming Language :: Python :: 2',
+
++        'Topic :: Utilities'
+
++    ]
+
++)
+@@ -1,5 +1,6 @@
+ import argparse
+
+ import copy
+
++import json
+
+ import math
+
+ import sys
+
+ from PIL import Image, ImageDraw
+@@ -304,8 +305,7 @@ def parse_argument():
+     parser.add_argument('--height', dest='height', type=int, default=100, help='crop height')
+
+ return parser.parse_args()
+
+ 
+
+-if __name__ == '__main__':
+
+-    import json
+
++def main():
+
+     opts = parse_argument()
+
+     sc = SmartCrop()
+
+     crop_options = DEFAULTS
+@@ -325,3 +325,6 @@ def parse_argument():
+     img2 = img.crop(box)
+
+     img2.thumbnail((crop_options['width'], crop_options['height']), Image.ANTIALIAS)
+
+     img2.save('out.jpg')
+
++
+
++if __name__ == '__main__':
+
++    main()

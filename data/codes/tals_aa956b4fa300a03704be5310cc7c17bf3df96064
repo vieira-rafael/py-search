@@ -1,0 +1,4460 @@
+@@ -0,0 +1,36 @@
++*.py[cod]
+
++
+
++# C extensions
+
++*.so
+
++
+
++# Packages
+
++*.egg
+
++*.egg-info
+
++dist
+
++build
+
++eggs
+
++parts
+
++bin
+
++var
+
++sdist
+
++develop-eggs
+
++.installed.cfg
+
++lib
+
++lib64
+
++__pycache__
+
++
+
++# Installer logs
+
++pip-log.txt
+
++
+
++# Unit test / coverage reports
+
++.coverage
+
++.tox
+
++nosetests.xml
+
++
+
++# Translations
+
++*.mo
+
++
+
++# Mr Developer
+
++.mr.developer.cfg
+
++.project
+
++.pydevproject
+@@ -0,0 +1,20 @@
++The MIT License (MIT)
+
++
+
++Copyright (c) 2013 tals
+
++
+
++Permission is hereby granted, free of charge, to any person obtaining a copy of
+
++this software and associated documentation files (the "Software"), to deal in
+
++the Software without restriction, including without limitation the rights to
+
++use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+
++the Software, and to permit persons to whom the Software is furnished to do so,
+
++subject to the following conditions:
+
++
+
++The above copyright notice and this permission notice shall be included in all
+
++copies or substantial portions of the Software.
+
++
+
++THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+
++IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+
++FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+
++COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+
++IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+
++CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+@@ -0,0 +1,184 @@
++"hey, I really wish I had uber.py..."  
+
++"OK, here you go"
+
++
+
++uber.py - a Python client for Uber
+
++----------------------------------
+
++
+
++[![Build Status](https://secure.travis-ci.org/tals/uber.py.png?branch=master)](http://travis-ci.org/tals/uber.py)
+
++
+
++
+
++Usage example:
+
++```python
+
++from uber import UberClient, geolocate
+
++client = UberClient('tal@test.org', 'my_token')
+
++app_state = client.request_pickup(Vehicles.UberX, '182 Howard St, San Francisco')
+
++>> app_state.ride
+
++...
+
++
+
++# pick outside your window and see the taxi
+
++```
+
++
+
++Rationale
+
++---------
+
++Right now we're in this weird stage where we have services that are insanely popular right now, yet lack even the most
+
++basic of APIs.
+
++
+
++That kinda sucks. Lets change that.
+
++
+
++This library strives to act as a reference for other libraries, and expose as much functionality of the api as possible.
+
++
+
++Design
+
++------
+
++Uber's clients are mostly stateless - for every request done against the server, it always return the FULL STATE of the
+
++app, with things like "what to put in the bottom bar", "is there a ride in progress" etc.
+
++
+
++Since this is a Python library, and will typically be used in server/cli environments, things that would normally be
+
++queried by external systems (GPS location) are passed EXPLICITLY as arguments, rather than being queried via some callback.
+
++Sadly it makes the API less convenient to use.
+
++
+
++It would be really cool to have "pleasant" client on top of this low-level one (eg have add_credit_card() return the payment
+
++profile rather than the whole state, etc). Pull-requests are welcome :)
+
++
+
++Supported features
+
++----------------------------
+
++- Order & cancel a ride.
+
++- Add/remove credit/debit cards
+
++- See the drivers in the area
+
++
+
++
+
++Support
+
++-------
+
++- Python 2.7
+
++- PyPy
+
++
+
++Installation
+
++-------------
+
++```
+
++$ pip install uber.py
+
++```
+
++
+
++Usage
+
++=====
+
++
+
++Examples
+
++--------
+
++- examples/ubercli.py: a fairly complete example that shows you how to ping the area, getting a ride and cancelling it.
+
++
+
++
+
++Authenticating a user
+
++--------------------------
+
++```python
+
++from uber import UberClient
+
++token = UberClient.login('tal@test.org', 'my_password')
+
++>> token
+
++'my_token'
+
++```
+
++
+
++Getting the app state
+
++---------------------
+
++```python
+
++client = UberClient('tal@test.org', 'my_token')
+
++app_state = client.ping()
+
++
+
++>>> print app_state.nearby_vehicles[UberCarType.UBERX]
+
++<class 'uber.models.NearbyVehicles'>
+
++    vehicle_paths: {
+
++        d2c0de3b-907f-49a4-8be8-756b8a2049bd:	[
+
++ <class 'uber.models.VehicleLocation'>
+
++                course: -140
+
++                epoch: 2013-12-06 04:49:46.996000,
+
++ <class 'uber.models.VehicleLocation'>
+
++                course: -140
+
++                epoch: 2013-12-06 04:50:00.995000,
+
++ ...
+
++        ]
+
++ 4b035b27-1544-44d5-93ea-7b3d6d33717a:	[
+
++ <class 'uber.models.VehicleLocation'>
+
++                course: 170
+
++                epoch: 2013-12-06 04:49:34.148000,
+
++ ...
+
++        ]
+
++ ...
+
++    }
+
++    min_eta: 1
+
++    eta_string: u'1 minute'
+
++    eta_string_short: u'1 min'
+
++
+
++```
+
++
+
++Getting a ride
+
++--------------
+
++```python
+
++from uber import geolocate
+
++geo_address = geolocate('182 Howard St, San Francisco')
+
++app_state = client.request_pickup(Vehicles.UberX,  geo_address)
+
++```
+
++
+
++Cancelling
+
++----------
+
++```python
+
++client.cancel_pickup()
+
++```
+
++
+
++Payments
+
++--------
+
++```python
+
++state = client.add_payment('1111222233334444', '01', '99', '123', '94111', 'US')
+
++>>> state.client.payment_profiles
+
++[
+
++ <class 'uber.models.PaymentProfile'>
+
++        card_type: u'Visa'
+
++ id: 123456
+
++        card_expiration: 2099-01-01 00:00:00+00:00
+
++        use_case: u'personal'
+
++        card_number: u'4444'
+
++]
+
++
+
++client.delete_payment_profile(123456)
+
++```
+
++
+
++Checking for surge
+
++------------------
+
++```python
+
++for view in state.city.vehicle_views.values():
+
++ if view.surge:
+
++ print '{name} has x{multiplier} surge rate'.format(
+
++ name=view.description,
+
++ multiplier=view.surge.multiplier)
+
++```
+
++
+
++FAQ
+
++===
+
++Q: What?  
+
++A: I was told by someone that I should have some projects on my Github account, so I figured that I might as well make
+
++something cool
+
++
+
++Q: Will I get banned for using this?  
+
++A: Maybe! I hope not. As it stands right now, Uber *CAN* tell this library apart from their official apps, as it makes
+
++no effort to look the same as them (It omits some fields, does not implement the caching mechanism etc).
+
++
+
++Q: What's missing?  
+
++A: bunch of stuff:
+
++- Feeding events to Uber's analytics system (see ```UberClient.Events``` & ```UberClient._send_event```)
+
++- Driver's side
+
++- Leaving feedback
+
++- PayPal integration
+
++
+
++Q: What about Lyft/Sidecar/Flywheel/omg there are so many of these  
+
++A: I've written a library for Lyft, but I'm sitting on it for now as I want to gauge interest first (plus I don't want
+
++to get banned from Lyft).
+
++About the others - I honestly don't use them at all, but we'll see!
+
++
+
++Q: Anything else?
+
++A: I'll buy a cookie to the first person who will write a Twilio-Uber mashup that lets people order Uber using SMS.
+
++What's cool about it is that it will allow people with feature phones to use Uber.
+
++I was thinking of something like:
+
++```
+
++>> Pickup UberX 182 Howard St, San Francisco
+
++<< Scheduling a pickup to 182 Howard Street, San Francisco, CA 94105, USA
+
++<< John will pick you up in 5 mins with a green Toyota Prius.
+
++>> ping
+
++<< John will pick you up in 2 mins with a green Toyota Prius.
+
++>> cancel
+
++<< ride has been cancelled.
+
++```
+
+
+
+@@ -0,0 +1,190 @@
++from cmd import Cmd
+
++import json
+
++from os import path
+
++import shlex
+
++import signal
+
++import time
+
++from uber import UberClient, geolocate, UberCarType, ClientStatus
+
++from uber.model_base import Model, StringField
+
++import sys
+
++
+
++
+
++class CliState(Model):
+
++    FILENAME = path.join(path.expanduser('~'), '.ubercli.json')
+
++
+
++    username = StringField('username', writeable=True)
+
++    token = StringField('token', writeable=True, optional=True)
+
++
+
++    def __init__(self):
+
++        super(CliState, self).__init__()
+
++        self.load()
+
++
+
++    def load(self):
+
++        if path.exists(self.FILENAME):
+
++            self._data = json.load(open(self.FILENAME))
+
++        else:
+
++            self._data = {}
+
++
+
++    def save(self):
+
++        json.dump(self._data, open(self.FILENAME, 'w'))
+
++
+
++
+
++class UberCli(Cmd):
+
++    def __init__(self):
+
++        Cmd.__init__(self)
+
++        self._state = CliState()
+
++        self.setup_client()
+
++
+
++    def setup_client(self):
+
++        if self._state.token:
+
++            self._client = UberClient(self._state.username, self._state.token)
+
++
+
++    def do_login(self, args):
+
++        """
+
++        Logs into Uber.
+
++        usage: login <email> <password>
+
++ """
+
++        username, password = shlex.split(args)
+
++        token = UberClient.login(username, password)
+
++        self._state.username = username
+
++        self._state.token = token
+
++        self._state.save()
+
++
+
++        self.setup_client()
+
++        print 'login ok'
+
++
+
++    def do_logout(self, args):
+
++        """
+
++        Log out of Uber (just deletes the token)
+
++ """
+
++        self._state.token = None
+
++        self._state.save()
+
++
+
++    def do_lookup(self, address):
+
++        """
+
++        Looks up an address
+
++        usage: lookup <address>
+
++ """
+
++        result = geolocate(address)
+
++        for entry in result:
+
++            print entry['formatted_address']
+
++
+
++    def do_add_credit_card(self, args):
+
++        """
+
++        Adds a credit card to Uber
+
++        usage: add_credit_card <creditcard> <month> <year> <cvv> <zipcode>
+
++ """
+
++        cc_number, month, year, cvv, zipcode = shlex.split(args)
+
++        result = self._client.add_payment(cc_number, month, year, cvv, zipcode)
+
++        print result
+
++
+
++    def do_ping(self, address_str):
+
++        """
+
++        shows you what taxis are close to you.
+
++        Usage: ping <address>
+
++ """
+
++        results = geolocate(address_str)
+
++
+
++        geodecoded_address = results[0]
+
++
+
++        print 'pinging: ' + geodecoded_address['formatted_address']
+
++        app_state = self._client.ping(geodecoded_address)
+
++        city = app_state.city
+
++        vehicle_views = city.vehicle_views
+
++        for key in city.vehicle_views_order:
+
++            nearby_info = app_state.nearby_vehicles.get(key)
+
++            view = vehicle_views[key]
+
++            count = len(nearby_info.vehicle_paths)
+
++
+
++            if count:
+
++                additional_info = ''
+
++                if view.surge:
+
++                    additional_info = 'Warning - x{multiplier} surge pricing is active!'.format(multiplier=view.surge.multiplier)
+
++
+
++                print '{name} has {count} cars near by (eta {eta}). {additional_info}'.format(
+
++                    name=view.description,
+
++                    count=len(nearby_info.vehicle_paths),
+
++                    eta=nearby_info.eta_string,
+
++                    additional_info=additional_info
+
++                    )
+
++            else:
+
++                print '{name} has no vehicles nearby :('.format(name=view.description)
+
++
+
++    def do_pickup(self, address):
+
++        """
+
++        Have an UberX pick you up
+
++        Usage: pickup <address>
+
++ """
+
++        results = geolocate(address)
+
++        if not results:
+
++            print 'address not found :('
+
++            return
+
++
+
++        for i in xrange(len(results)):
+
++            entry = results[i]
+
++            print '{index}) {entry}'.format(
+
++                index=i + 1,
+
++                entry=entry['formatted_address']
+
++            )
+
++
+
++        selection_num = int(raw_input('address # (0 to abort): ') or 0)
+
++        if not selection_num:
+
++            return
+
++
+
++        selection = results[selection_num - 1]
+
++
+
++        print 'booking UberX for {}...'.format(selection['formatted_address'])
+
++        self._book_ride(selection)
+
++
+
++    def _book_ride(self, location):
+
++        abort_signal = []
+
++
+
++        def handle_abort(*args):
+
++            abort_signal.append(None)
+
++            self._client.cancel_pickup()
+
++            signal.signal(signal.SIGINT, signal.SIG_DFL)
+
++
+
++        signal.signal(signal.SIGINT, handle_abort)
+
++        self._client.request_pickup(UberCarType.UBERX, location)
+
++
+
++        print_state = True
+
++        last_status = None
+
++        print 'waiting for ride (ctrl+c at any time to cancel ride)'
+
++
+
++        while print_state and not abort_signal:
+
++            state = self._client.ping(None)
+
++            status = state.client.status
+
++            if status != last_status:
+
++                print 'status: ' + status
+
++                last_status = status
+
++
+
++            if status == ClientStatus.LOOKING:
+
++                print state.client.last_request_note
+
++                break
+
++
+
++            if status == ClientStatus.WAITING_FOR_PICKUP:
+
++                trip = state.trip
+
++                vehicle = trip.vehicle
+
++                sys.stdout.write("\r{driver} will pick you up in {eta} with a {color} {make} {model}.".format(
+
++                    driver=trip.driver.name,
+
++                    eta=trip.eta_string_short,
+
++                    color=vehicle.exterior_color,
+
++                    make=vehicle.vehicle_type.make,
+
++                    model=vehicle.vehicle_type.model,
+
++                ))
+
++                sys.stdout.flush()
+
++
+
++            time.sleep(1)
+
++
+
++    def do_experiments(self, args):
+
++        """
+
++        print uber's running experiments
+
++ """
+
++        state = self._client.ping(None)
+
++        for experiment in state.client.active_experiments.values():
+
++            print '{name} ({group})'.format(name=experiment.name, group=experiment.treatment_group_name)
+
++
+
++if __name__ == '__main__':
+
++    print "Welcome to UberCLI! Type 'help' for help"
+
++    cli = UberCli()
+
++    cli.cmdloop()
+@@ -0,0 +1,10 @@
++[nosetests]
+
++detailed-errors=1
+
++with-coverage=1
+
++verbosity=2
+
++cover-package=uber
+
++cover-html=1
+
++
+
++[flake8]
+
++max-line-length = 160
+
++exclude = ./tests/*.py,./uber/__init__.py
+@@ -0,0 +1,42 @@
++#!/usr/bin/env python
+
++from setuptools import setup, find_packages
+
++
+
++
+
++TEST_REQUIRES = [
+
++    'flexmock>=0.9.7',
+
++    'nose',
+
++    'coverage'
+
++]
+
++
+
++INSTALL_REQUIRES = [
+
++    'requests>=1.0.0',
+
++    'pycrypto>=2.5',
+
++    'python-dateutil>=1.5'
+
++]
+
++
+
++setup(
+
++    name='uber.py',
+
++    version='1.0',
+
++    author='Tal Shiri',
+
++    author_email='eiopaa@gmail.com',
+
++    url='http://github.com/tals/uber.py',
+
++    description='Python client for Uber',
+
++    long_description=__doc__,
+
++    packages=find_packages(exclude=("tests", "tests.*",)),
+
++    zip_safe=False,
+
++    extras_require={
+
++        'tests': TEST_REQUIRES,
+
++    },
+
++    license='BSD',
+
++    tests_require=TEST_REQUIRES,
+
++    install_requires=INSTALL_REQUIRES,
+
++    test_suite='tests',
+
++    include_package_data=True,
+
++    classifiers=[
+
++        'Intended Audience :: Developers',
+
++        'Operating System :: OS Independent',
+
++        'Topic :: Software Development',
+
++        'Programming Language :: Python',
+
++        'Programming Language :: Python :: 2.7',
+
++    ],
+
++)
+
+
+
+@@ -0,0 +1,55 @@
++import unittest
+
++from Crypto.Cipher import AES, PKCS1_v1_5
+
++from uber.braintree import Braintree, unpad
+
++from Crypto.PublicKey import RSA
+
++
+
++public_key = "MIIBCgKCAQEA8wQ3PXFYuBn9RBtOK3lW4V+7HNjik7FFd0qpPsCVd4KeiIfhuzupSevHUOLjbRSqwvAaZK3/icbBaM7CMAR5y0OjAR5lmmEEkcw+A7pmKQK6XQ8j3fveJCzC3MPiNiFfr+vER7O4diTxGhoXjFFJQpzKkCwFgwhKrW8uJLmWqVhQRVNphii1GpxI4fjFNc4h1w2W2CJ9kkv+9e3BnCpdVe1w7gBQZMkgjCzxbuAg8XaKlKD48M9kr8iE8kNt1eXV0jbmhCY3vZrckCUv26r2X4cD5lDvUtC1Gj6jBFobm/MelAfoFqNeq+/9VyMdYfhIecQimiBYr7Vm5VH9m69TXwIDAQAB"
+
++private_key = "MIIEowIBAAKCAQEA8wQ3PXFYuBn9RBtOK3lW4V+7HNjik7FFd0qpPsCVd4KeiIfhuzupSevHUOLjbRSqwvAaZK3/icbBaM7CMAR5y0OjAR5lmmEEkcw+A7pmKQK6XQ8j3fveJCzC3MPiNiFfr+vER7O4diTxGhoXjFFJQpzKkCwFgwhKrW8uJLmWqVhQRVNphii1GpxI4fjFNc4h1w2W2CJ9kkv+9e3BnCpdVe1w7gBQZMkgjCzxbuAg8XaKlKD48M9kr8iE8kNt1eXV0jbmhCY3vZrckCUv26r2X4cD5lDvUtC1Gj6jBFobm/MelAfoFqNeq+/9VyMdYfhIecQimiBYr7Vm5VH9m69TXwIDAQABAoIBAEvL/9LJPKvHZ2hLv/jtUrze2ASqXRlFzG3lup4ZAUWSVxIsl6qHdEjbIoLHEbpfHNfKfeDzKGX3uTGQc574dmiAwyHBMl2RbxRuiNUu2VhnQmtuInjFa0cLMwgajL7nb+n19nWKx7kJ0q2af8fDPr9pGgEXyexRtMEdkV3hCO3uQxA0MlX/61LK4Gssk7hlXcNw6k4fIRt9xANnN3KUrGIYtmaCk9kKsX8HhW9yrVm0WWXHnzm6o5O+3BeP+3cWe+NHeRJEVEXwIPqWtdQa6e0hDtLpCQPOSlpr4yJHssT2BHpkPaHi6OnGIHa0HD7ibyfwc1KQjcwA8jg4OabmT7ECgYEA/2Y1m1zG5B0nB9Mixu/3K7d+FYpBrlTKElJ0rFNcNBgvt32dPBD6E6ZrL8MokXSy8HrhhR4epQYolyfHHtpzva1gZ8XRO1wZO++TfJwfUd1epDGcdMOfw++dZFW1EaWrnC3YPxrvfd/DuilwXg1QUb9aIiXCMpmQw/sm0VNk2ycCgYEA85aMzCSR2pMNip9WDQnsrP+6nYhST3BrJlJAwLNrWS9zQFfXLvufIJ0OQkdP2mAM9yN9vV8FmAt7CSAPY2UsMvKpriyv5vlqZZF7VwMr1bOaIOllBA+IIY/x3c7iF5Ezt1hJyNegjmts+Fz39G6PN1WDrCGcmcZbXOEYhs2eyQkCgYEAgANqITpqkpIuKxTgHJjQ6j+p2gAXldr4AiEETA/oalApMq6qrh3QSyMiHKmUXvwAaNseyMtlDtA8bi9I9iUG2G7boIgdrMQn/cvCwDW82Rq9Qk1/n2MiZGJpII55GKRSlRDBkDffDNeo0lnM8cd4l9Dyy6TjZttkHWd4eHl1VwcCgYAt9VC5T4kJUUdzyR5GNYInHdTK1iaZgF9nCovXD8MIP7CiCjC6V5UtZRSEosnJLOglVNfre9slVb0v+pGMslEFh81F5H6HuLU/VpSL1ThXCJzi6sY5XujTVEJRFDCKO8YjKJA7SZusY05bCcdqodV5njPKrUjLpqYkPwAOpwr3aQKBgGie+R5Xk1t0IEdTnnY/aZHNHR6fn5elFArgRN6fixx82kQDfgMaeQbtOW4Z8RxDDUeGhc11S1filfVZT2DHayoQLr6ORU/nODhHe6KedsUNFy1IRgoR1Si+2Y1g3IjrxqAFFdmgBNsxc1JMoFUDMJe2KlaF3nEk3OWuPc/A5G12"
+
++
+
++class TestBraintree(unittest.TestCase):
+
++    def test_aes(self):
+
++        bt = Braintree(public_key)
+
++        key, payload = bt._aes_encrypt('hello world')
+
++
+
++        iv = payload[:Braintree.IV_LENGTH]
+
++        encrypted_data = payload[Braintree.IV_LENGTH:]
+
++
+
++        aes = AES.new(key, AES.MODE_CBC, iv)
+
++        decrypted_data = aes.decrypt(encrypted_data)
+
++        decrypted_data = unpad(decrypted_data)
+
++        self.assertEqual(decrypted_data, 'hello world')
+
++
+
++    def test_rsa(self):
+
++        bt = Braintree(public_key)
+
++        encrypted = bt._rsa_encrypt('hello world')
+
++        self.assertEqual(self._decrypt_rsa(encrypted), 'hello world')
+
++
+
++    def test_full(self):
+
++        bt = Braintree(public_key)
+
++        full_message = bt.encrypt('hello world')
+
++
+
++        _, prefix, encrypted_key, encrypted_payload = full_message.split('$')
+
++        self.assertEqual(_ + '$' + prefix, Braintree.PREFIX)
+
++
+
++        # strip rsa
+
++        encrypted_payload = encrypted_payload.decode('base64')
+
++        decrypted_key = self._decrypt_rsa(encrypted_key.decode('base64')).decode('base64')
+
++
+
++        # strip aes
+
++        iv = encrypted_payload[:Braintree.IV_LENGTH]
+
++        encrypted_data = encrypted_payload[Braintree.IV_LENGTH:]
+
++
+
++        aes = AES.new(decrypted_key, AES.MODE_CBC, iv)
+
++        decrypted_data = aes.decrypt(encrypted_data)
+
++        decrypted_data = unpad(decrypted_data)
+
++
+
++        self.assertEqual(decrypted_data, 'hello world')
+
++
+
++    def _decrypt_rsa(self, data):
+
++        rsa = RSA.importKey(private_key.decode('base64'))
+
++        cipher = PKCS1_v1_5.new(rsa)
+
++        return cipher.decrypt(data, Exception())
+
++
+
++
+
++if __name__ == '__main__':
+
++    unittest.main()
+@@ -0,0 +1,273 @@
++import json
+
++import unittest
+
++from tests import DictPartialMatcher
+
++from uber import UberClient, GPSLocation, UberException, Place, VehicleView, SimpleLocation, UberLocationNotFound, PaymentProfile
+
++from flexmock import flexmock
+
++import uber.client
+
++from uber import settings
+
++from tests import mocked_response
+
++from uber import geolocation
+
++class TestUberClient(unittest.TestCase):
+
++    mock_location = GPSLocation(1, 2)
+
++
+
++    def setUp(self):
+
++        self._client = UberClient('test@test.org', '12345')
+
++
+
++    def test_post(self):
+
++        data = {'a': 'b'}
+
++
+
++        (flexmock(self._client._session)
+
++         .should_receive('post')
+
++         .with_args('http://www.boo.org', json.dumps(data), headers=self._client._headers)
+
++         .and_return(mocked_response({'aaa': 'bbb'}))
+
++         .times(1)
+
++        )
+
++
+
++        self.assertEqual(self._client._post('http://www.boo.org', data=data).json(), {'aaa': 'bbb'})
+
++
+
++    def test_message_error_handling(self):
+
++        error_data = {
+
++            'messageType': 'Error',
+
++            'description': 'something bad',
+
++            'errorCode': 12345,
+
++        }
+
++
+
++        (flexmock(self._client._session)
+
++         .should_receive('post')
+
++         .and_return(mocked_response(error_data))
+
++         .times(1)
+
++        )
+
++
+
++        with self.assertRaises(UberException) as expected_exception:
+
++            self._client._send_message('crap')
+
++
+
++        self.assertEqual(expected_exception.exception.description, 'something bad')
+
++        self.assertEqual(expected_exception.exception.error_code, 12345)
+
++
+
++    def test_http_error_handling(self):
+
++        (flexmock(self._client._session)
+
++         .should_receive('post')
+
++         .and_return(mocked_response('error!', 401))
+
++         .times(1)
+
++        )
+
++
+
++        with self.assertRaises(UberException) as expected_exception:
+
++            self._client._post('http://www.test.org', {'nobody': 'cares'})
+
++
+
++        self.assertEqual(expected_exception.exception.error_code, 401)
+
++        self.assertEqual(expected_exception.exception.description, 'error!')
+
++
+
++    def test_send_message(self):
+
++        client = UberClient('test@test.org', '12345')
+
++        response = mocked_response('omg')
+
++        expected_data = {
+
++            'email': 'test@test.org',
+
++            'deviceOS': settings.DEVICE_OS,
+
++            'language': 'en',
+
++            'deviceModel': settings.DEVICE_MODEL,
+
++            'app': 'client',
+
++            'messageType': '111',
+
++            'token': '12345',
+
++            'version': settings.UBER_VERSION,
+
++            'device': settings.DEVICE_NAME,
+
++            'aaa': 'bbb',
+
++        }
+
++
+
++        (flexmock(UberClient)
+
++         .should_receive('_copy_location_for_message')
+
++         .with_args(self.mock_location, dict)
+
++         .times(1)
+
++        )
+
++
+
++        (flexmock(UberClient)
+
++         .should_receive('_post')
+
++         .with_args(UberClient.ENDPOINT, data=DictPartialMatcher(expected_data))
+
++         .times(1)
+
++         .and_return(response))
+
++
+
++        (flexmock(UberClient)
+
++         .should_receive('_validate_message_response')
+
++         .with_args(response.json())
+
++         .times(1)
+
++        )
+
++
+
++        params = {
+
++            'aaa': 'bbb'
+
++        }
+
++
+
++        self.assertEqual('omg', client._send_message('111', params, self.mock_location))
+
++
+
++    def test_login(self):
+
++        (flexmock(uber.client)
+
++            .should_receive('hash_password')
+
++            .and_return('1122334455')
+
++        )
+
++
+
++        (flexmock(UberClient)
+
++            .should_receive('_send_message')
+
++            .with_args('Login', params={'password': '1122334455', 'email': 'aaa'})
+
++            .and_return({
+
++                'token': '12345'
+
++            })
+
++        )
+
++
+
++
+
++        token = UberClient.login('aaa', 'bbb')
+
++        self.assertEqual(token, '12345')
+
++
+
++    def test_hash_password(self):
+
++        from uber.client import hash_password
+
++        self.assertEqual(hash_password('12345'), 'e186e4e7a446d1b451e8e985c8db4a21')
+
++
+
++
+
++    def test_nearby_places(self):
+
++        params = {
+
++            'searchTypes': ['places'],
+
++            'query': 'huge potato'
+
++        }
+
++
+
++        expected_places = [1,2,3,4,5]
+
++
+
++        (flexmock(self._client)
+
++            .should_receive('_send_message')
+
++            .with_args('LocationSearch', params=params, location='test_location')
+
++            .and_return({'places': expected_places})
+
++        )
+
++
+
++
+
++        result = self._client.nearby_places('huge potato', 'test_location')
+
++        self.assertEqual([x.raw for x in result], expected_places)
+
++        for item in result:
+
++            self.assertEqual(type(item), Place)
+
++
+
++    def test_copy_location_for_message(self):
+
++        data = {}
+
++        self._client._copy_location_for_message({'longitude': 1, 'latitude': 0.5}, data)
+
++        self.assertEqual(data, {'longitude': 1, 'latitude': 0.5})
+
++
+
++        data = {}
+
++        self._client._copy_location_for_message(GPSLocation(latitude=0.5, longitude=1), data)
+
++        self.assertEqual(data, {'longitude': 1, 'latitude': 0.5})
+
++
+
++        data = {}
+
++        self._client._copy_location_for_message(GPSLocation(
+
++            latitude=0.5,
+
++            longitude=1,
+
++            vertical_accuracy=0.1,
+
++            horizontal_accuracy=0.2,
+
++            altitude=0.3), data)
+
++
+
++        self.assertEqual(data, {
+
++            'latitude': 0.5,
+
++            'longitude': 1,
+
++            'verticalAccuracy': 0.1,
+
++            'horizontalAccuracy': 0.2,
+
++            'altitude': 0.3,
+
++            })
+
++
+
++
+
++    def test_request_pickup(self):
+
++        (flexmock(UberClient)
+
++            .should_receive('_send_message')
+
++            .with_args('Pickup',
+
++                       params={'vehicleViewId': 1, 'useCredits': True, 'pickupLocation': {'some_geo_field': '12345'}},
+
++                       location=self.mock_location)
+
++        )
+
++
+
++        self._client.request_pickup(
+
++            VehicleView({'id': 1}),
+
++            pickup_address={'some_geo_field': '12345'},
+
++            gps_location=self.mock_location)
+
++
+
++    def test_request_pickup_with_string_address(self):
+
++        (flexmock(geolocation)
+
++            .should_receive('geolocate')
+
++            .with_args('some address')
+
++            .and_return([{'some_geo_field': '12345'}])
+
++        )
+
++
+
++        (flexmock(UberClient)
+
++            .should_receive('_send_message')
+
++            .with_args('Pickup',
+
++                       params={'vehicleViewId': 1, 'useCredits': True, 'pickupLocation': {'some_geo_field': '12345'}},
+
++                       location=self.mock_location)
+
++        )
+
++
+
++        self._client.request_pickup(
+
++            VehicleView({'id': 1}),
+
++            pickup_address='some address',
+
++            gps_location=self.mock_location)
+
++
+
++    def test_request_pickup_with_bad_string_address(self):
+
++        (flexmock(geolocation)
+
++            .should_receive('geolocate')
+
++            .with_args('some address')
+
++            .and_return([])
+
++        )
+
++
+
++        with self.assertRaises(UberLocationNotFound):
+
++            self._client.request_pickup(
+
++                VehicleView({'id': 1}),
+
++                pickup_address='some address',
+
++                gps_location=self.mock_location)
+
++
+
++    def test_request_pickup_int_args(self):
+
++        (flexmock(geolocation)
+
++            .should_receive('geolocate')
+
++            .with_args('some address')
+
++            .and_return([{'some_geo_field': '12345'}])
+
++        )
+
++
+
++        (flexmock(UberClient)
+
++            .should_receive('_send_message')
+
++            .with_args('Pickup',
+
++                       params={'vehicleViewId': 111,
+
++                               'useCredits': True,
+
++                               'paymentProfileId': 555,
+
++                               'pickupLocation': {'some_geo_field': '12345'}
+
++                       },
+
++                       location=self.mock_location)
+
++        )
+
++
+
++        self._client.request_pickup(
+
++            111,
+
++            pickup_address='some address',
+
++            payment_profile=555,
+
++            gps_location=self.mock_location)
+
++
+
++    def test_request_pickup_model_args(self):
+
++        (flexmock(geolocation)
+
++            .should_receive('geolocate')
+
++            .with_args('some address')
+
++            .and_return([{'some_geo_field': '12345'}])
+
++        )
+
++
+
++        (flexmock(UberClient)
+
++            .should_receive('_send_message')
+
++            .with_args('Pickup',
+
++                       params={'vehicleViewId': 111,
+
++                               'useCredits': True,
+
++                               'paymentProfileId': 555,
+
++                               'pickupLocation': {'some_geo_field': '12345'}
+
++                       },
+
++                       location=self.mock_location)
+
++        )
+
++
+
++        self._client.request_pickup(
+
++            VehicleView({'id': 111}),
+
++            pickup_address='some address',
+
++            payment_profile=PaymentProfile({'id': 555}),
+
++            gps_location=self.mock_location)
+
++
+
++
+
++    def test_ping(self):
+
++        (flexmock(UberClient)
+
++            .should_receive('_send_message')
+
++            .with_args('PingClient',
+
++                       location=self.mock_location)
+
++        )
+
++
+
++        self._client.ping(self.mock_location)
+
++
+
++if __name__ == '__main__':
+
++    unittest.main()
+
+
+
+@@ -0,0 +1,139 @@
++import unittest
+
++import requests
+
++from tests import mocked_response
+
++from uber import geolocate, GPSLocation, GeolocationExcetion
+
++from flexmock import flexmock
+
++
+
++class TestGeoLocation(unittest.TestCase):
+
++    def test_geolocation_no_results(self):
+
++        expected_args = {
+
++            'sensor': 'false',
+
++            'address': 'my magic address'
+
++        }
+
++        (flexmock(requests)
+
++            .should_receive('get')
+
++            .with_args('http://maps.googleapis.com/maps/api/geocode/json', params=expected_args)
+
++            .and_return(mocked_response({'status': 'ZERO_RESULTS'}))
+
++        )
+
++
+
++        results = geolocate('my magic address')
+
++        self.assertEqual(results, [])
+
++
+
++    def test_geolocation_multiple_results(self):
+
++        expected_args = {
+
++            'sensor': 'false',
+
++            'address': 'my magic address'
+
++        }
+
++
+
++        expected_results = {
+
++            'status': 'OK',
+
++            'results': [{
+
++                'address_components': 'lol1',
+
++                'some_field': 'some_field1',
+
++                'geometry': {
+
++                    'location': {
+
++                        'lat': 1,
+
++                        'lng': 2,
+
++                    }
+
++                }
+
++
+
++            },
+
++            {
+
++                'address_components': 'lol2',
+
++                'some_field': 'some_field2',
+
++                'geometry': {
+
++                    'location': {
+
++                        'lat': 3,
+
++                        'lng': 4,
+
++                    }
+
++                }
+
++
+
++            }]
+
++
+
++        }
+
++        (flexmock(requests)
+
++            .should_receive('get')
+
++            .with_args('http://maps.googleapis.com/maps/api/geocode/json', params=expected_args)
+
++            .and_return(mocked_response(expected_results))
+
++        )
+
++
+
++        results = geolocate('my magic address')
+
++        self.assertEqual(results, [
+
++            {
+
++                'address_components': 'lol1',
+
++                'some_field': 'some_field1',
+
++                'geometry': {'location': {'lat': 1, 'lng': 2}},
+
++                'latitude': 1,
+
++                'longitude': 2,
+
++            },
+
++            {
+
++                'address_components': 'lol2',
+
++                'some_field': 'some_field2',
+
++                'geometry': {'location': {'lat': 3, 'lng': 4}},
+
++                'latitude': 3,
+
++                'longitude': 4,
+
++            }
+
++        ])
+
++
+
++    def test_components(self):
+
++        expected_args = {
+
++            'sensor': 'false',
+
++            'address': 'my magic address',
+
++            'components': 'country:US|administrative_area:SF'
+
++        }
+
++        (flexmock(requests)
+
++            .should_receive('get')
+
++            .with_args('http://maps.googleapis.com/maps/api/geocode/json', params=expected_args)
+
++            .and_return(mocked_response({'status': 'ZERO_RESULTS'}))
+
++        )
+
++
+
++        results = geolocate('my magic address', country='US', administrative_area='SF')
+
++
+
++    def test_bounds(self):
+
++        expected_args = {
+
++            'sensor': 'false',
+
++            'address': 'my magic address',
+
++            'bounds': '1,2|3,4'
+
++        }
+
++        (flexmock(requests)
+
++            .should_receive('get')
+
++            .with_args('http://maps.googleapis.com/maps/api/geocode/json', params=expected_args)
+
++            .and_return(mocked_response({'status': 'ZERO_RESULTS'}))
+
++        )
+
++
+
++        geolocate('my magic address', bounds=[GPSLocation(1, 2), GPSLocation(3, 4)])
+
++
+
++    def test_error(self):
+
++        expected_args = {
+
++            'sensor': 'false',
+
++            'address': 'my magic address'
+
++        }
+
++        (flexmock(requests)
+
++            .should_receive('get')
+
++            .with_args('http://maps.googleapis.com/maps/api/geocode/json', params=expected_args)
+
++            .and_return(mocked_response({'status': 'ERROR'}))
+
++        )
+
++
+
++        with self.assertRaises(GeolocationExcetion) as expected_exception:
+
++            geolocate('my magic address')
+
++
+
++        self.assertEqual(expected_exception.exception.message, {'status': 'ERROR'})
+
++
+
++        expected_args = {
+
++            'sensor': 'false',
+
++            'address': 'my magic address'
+
++        }
+
++        (flexmock(requests)
+
++            .should_receive('get')
+
++            .with_args('http://maps.googleapis.com/maps/api/geocode/json', params=expected_args)
+
++            .and_return(mocked_response({'say': 'what'}, status_code=401))
+
++        )
+
++
+
++        with self.assertRaises(GeolocationExcetion) as expected_exception:
+
++            geolocate('my magic address')
+
++
+
++        self.assertEqual(expected_exception.exception.message, {'say': 'what'})
+
++
+
++
+
++if __name__ == '__main__':
+
++    unittest.main()
+@@ -0,0 +1,97 @@
++import unittest
+
++from uber.model_base import *
+
++
+
++class DummySubModel(Model):
+
++    id = NumberField('id')
+
++
+
++class DummyModel(Model):
+
++    some_number = NumberField('someNumber')
+
++    some_boolean = BooleanField('someBoolean')
+
++    some_dict = DictField('someDict', DummySubModel)
+
++    some_array = ListField('someArray', DummySubModel)
+
++    some_model = ModelField('someModel', DummySubModel)
+
++
+
++class DummyModelOptional(Model):
+
++    some_number = NumberField('someNumber', optional=True)
+
++    some_dict = DictField('someDict', DummySubModel, optional=True)
+
++    some_array = ListField('someArray', DummySubModel, optional=True)
+
++    some_model = ModelField('someModel', DummySubModel, optional=True)
+
++
+
++class TestModelBase(unittest.TestCase):
+
++    def test_model(self):
+
++        d = {
+
++            'someNumber': 1,
+
++            'someBoolean': True,
+
++            'someDict': {
+
++                'xxx': {
+
++                    'id': 1
+
++                },
+
++                'yyy': {
+
++                    'id': 2
+
++                }
+
++            },
+
++            'someArray': [{
+
++                'id': 3
+
++            },{
+
++                'id': 4
+
++            }],
+
++            'someModel': {
+
++                'id': 5
+
++            }
+
++        }
+
++
+
++        model = DummyModel(d)
+
++        self.assertEqual(model.raw, d)
+
++        self.assertEqual(model.some_number, 1)
+
++        self.assertEqual(model.some_boolean, True)
+
++        some_dict = model.some_dict
+
++        self.assertEqual(len(some_dict), 2)
+
++        self.assertEqual(some_dict['xxx'], DummySubModel({'id': 1}))
+
++        self.assertEqual(some_dict['xxx'], DummySubModel({'id': 1}))
+
++
+
++        self.assertEqual(model.some_array, [DummySubModel({'id': 3}), DummySubModel({'id': 4})])
+
++        self.assertEqual(model.some_model, DummySubModel({'id': 5}))
+
++
+
++    def test_optional(self):
+
++        model = DummyModelOptional({})
+
++        self.assertIsNone(model.some_model)
+
++        self.assertIsNone(model.some_number)
+
++        self.assertEqual(model.some_array, [])
+
++        self.assertEqual(model.some_dict, {})
+
++
+
++    def test_dict_with_key_func(self):
+
++        d = {
+
++            'dicty':
+
++                {
+
++                    '1': {'id': 'a'},
+
++                    '2': {'id': 'b'},
+
++                }
+
++        }
+
++
+
++        class DummyTestModel(Model):
+
++            dicty = DictField('dicty', key=int, value=DummySubModel)
+
++
+
++
+
++        model = DummyTestModel(d)
+
++        self.assertEqual([1, 2], model.dicty.keys())
+
++        self.assertEqual(DummySubModel({'id': 'a'}), model.dicty[1])
+
++        self.assertEqual(DummySubModel({'id': 'b'}), model.dicty[2])
+
++
+
++    def test_readonly(self):
+
++        model = DummySubModel({'id': 1})
+
++
+
++        with self.assertRaises(AttributeError):
+
++            model.id = 1
+
++
+
++    def test_writeable(self):
+
++        class WriteableModel(Model):
+
++            id = NumberField('id', writeable=True)
+
++
+
++        model = WriteableModel({'id': 1})
+
++        self.assertEqual(model.id, 1)
+
++        model.id = 2
+
++        self.assertEqual(model.id, 2)
+
++
+
++
+
++if __name__ == '__main__':
+
++    unittest.main()
+@@ -0,0 +1,143 @@
++from datetime import datetime
+
++import unittest
+
++from dateutil.tz import tzutc
+
++from uber import VehicleLocation, Image, Fare, Trip, TripState
+
++from uber.client import *
+
++
+
++
+
++class TestModels(unittest.TestCase):
+
++    def test_vehicle_location(self):
+
++        location = VehicleLocation({"epoch": 1384233249575,
+
++                                    "latitude": 37.76062,
+
++                                    "longitude": -122.40647,
+
++                                    "course": 180})
+
++        self.assertEqual(location.epoch, datetime.utcfromtimestamp(1384233249575 / 1000.0))
+
++        self.assertEqual(location.latitude, 37.76062)
+
++        self.assertEqual(location.longitude, -122.40647)
+
++        self.assertEqual(location.course, 180)
+
++
+
++    def test_image(self):
+
++        model = Image({
+
++            "url": "http://d1a3f4spazzrp4.cloudfront.net/car-types/map/map-black.png",
+
++            "width": 30,
+
++            "height": 70
+
++        })
+
++        self.assertEqual(model.url, 'http://d1a3f4spazzrp4.cloudfront.net/car-types/map/map-black.png')
+
++        self.assertEqual(model.width, 30)
+
++        self.assertEqual(model.height, 70)
+
++
+
++    def test_fare(self):
+
++        d = {'speedThresholdMps': 5,
+
++             'base': '$7',
+
++             'perMinute': '$1.05',
+
++             'perDistanceUnit': '$4',
+
++             'distanceUnit': 'mile',
+
++             'type': 'TimeOrDistance',
+
++             'minimum': '$15',
+
++             'id': 33,
+
++             'cancellation': '$10'
+
++        }
+
++
+
++        model = Fare(d)
+
++        self.assertEquals(model.speed_threshold_mps, 5)
+
++        self.assertEquals(model.base, '$7')
+
++        self.assertEquals(model.per_minute, '$1.05')
+
++        self.assertEquals(model.per_distance_unit, '$4')
+
++        self.assertEquals(model.distance_unit, 'mile')
+
++        self.assertEquals(model.type, 'TimeOrDistance')
+
++        self.assertEquals(model.minimum, '$15')
+
++        self.assertEquals(model.id, 33)
+
++        self.assertEquals(model.cancellation, '$10')
+
++
+
++    def test_vehicle_view(self):
+
++        d = {"id": 1,
+
++             "description": "Black Car",
+
++             "capacity": 4,
+
++             "maxFareSplits": 4,
+
++             "mapImages": [{
+
++                               "url": "http://d1a3f4spazzrp4.cloudfront.net/car-types/map/map-black.png",
+
++                               "width": 30,
+
++                               "height": 70
+
++                           }],
+
++             "monoImages": [{
+
++                                "url": "http://d1a3f4spazzrp4.cloudfront.net/car-types/mono/mono-black.png",
+
++                                "width": 114,
+
++                                "height": 34
+
++                            }],
+
++             "pickupButtonString": "Set pickup location",
+
++             "confirmPickupButtonString": "Request pickup here",
+
++             "requestPickupButtonString": "Request {string}",
+
++             "setPickupLocationString": "Set Pickup Location",
+
++             "pickupEtaString": "Pickup time is approximately {string}",
+
++             "fare": {
+
++                 "id": 33,
+
++                 "base": "$7",
+
++                 "perDistanceUnit": "$4",
+
++                 "distanceUnit": "mile",
+
++                 "perMinute": "$1.05",
+
++                 "speedThresholdMps": 5,
+
++                 "minimum": "$15",
+
++                 "cancellation": "$10",
+
++                 "type": "TimeOrDistance"
+
++             },
+
++             "fareDetailsUrl": None,
+
++             "allowFareEstimate": True,
+
++             "noneAvailableString": "no black cars available"
+
++        }
+
++
+
++        model = VehicleView(d)
+
++        self.assertEqual(model.id, 1)
+
++        self.assertEqual(model.description, "Black Car")
+
++        self.assertEqual(model.capacity, 4)
+
++        self.assertEqual(model.max_fare_splits, 4)
+
++        self.assertEqual(model.allow_fare_estimate, True)
+
++        self.assertEqual([x.raw for x in model.map_images], d['mapImages'])
+
++        self.assertEqual([x.raw for x in model.mono_images], d['monoImages'])
+
++        self.assertEqual(model.fare.raw, d['fare'])
+
++
+
++    def test_payment_profile(self):
+
++        d = {
+
++            u'accountName': 'lol',
+
++            u'billingCountryIso2': 'US',
+
++            u'cardExpiration': u'2016-02-01T00:00:00+00:00',
+
++            u'cardNumber': u'1111',
+
++            u'cardType': u'Visa',
+
++            u'id': 11223344,
+
++            u'tokenType': 'braintree',
+
++            u'useCase': u'personal'
+
++        }
+
++
+
++        model = PaymentProfile(d)
+
++        self.assertEquals(model.billing_country_iso2, 'US')
+
++        self.assertEquals(model.card_type, 'Visa')
+
++        self.assertEquals(model.card_number, '1111')
+
++        self.assertEquals(model.token_type, 'braintree')
+
++        self.assertEquals(model.card_expiration, datetime(2016, 2, 1, 0, 0, tzinfo=tzutc()))
+
++        self.assertEquals(model.id, 11223344)
+
++        self.assertEquals(model.use_case, 'personal')
+
++        self.assertEquals(model.account_name, 'lol')
+
++
+
++    def test_trip(self):
+
++        d = {
+
++            'dispatchPercent': 0.1,
+
++            'paymentProfileId': 1252863,
+
++            'pickupLocation': {'aaa': 'bbb'},
+
++            'useCredits': True
+
++        }
+
++
+
++        model = Trip(d)
+
++        self.assertEqual(model.dispatch_percent, 0.1)
+
++        self.assertEqual(model.pickup_location, {'aaa': 'bbb'})
+
++        self.assertEqual(model.state, TripState.DISPATCHING)
+
++
+
++        d = {
+
++            'driver': {'a': 'b'},
+
++            'eta': 5
+
++        }
+
++        model = Trip(d)
+
++        self.assertEqual(model.state, TripState.DRIVING_TO_PICKUP)
+
++        self.assertEqual(model.eta, 5)
+
++        self.assertEqual(model.driver.raw, {'a': 'b'})
+
++
+
++if __name__ == '__main__':
+
++    unittest.main()
+@@ -0,0 +1,3 @@
++from .client import UberClient, UberException, UberLocationNotFound
+
++from .models import *
+
++from .geolocation import geolocate, GeolocationExcetion
+
+
+
+@@ -0,0 +1,49 @@
++"""
+
++Braintree client-side encryption
+
++"""
+
++
+
++from Crypto.Cipher import AES
+
++from Crypto import Random
+
++from Crypto.PublicKey import RSA
+
++from Crypto.Cipher import PKCS1_v1_5
+
++
+
++# PKCS#5 padding. Thanks https://gist.github.com/crmccreary/5610068
+
++BS = 16
+
++pad = lambda s: s + (BS - len(s) % BS) * chr(BS - len(s) % BS)
+
++unpad = lambda s: s[0:-ord(s[-1])]
+
++
+
++
+
++class Braintree(object):
+
++    """
+
++    Implements the Braintree client-side encryption. Used iOS code for reference.
+
++ """
+
++
+
++    PREFIX = '$bt3|ios_1_0_1'
+
++    KEY_LENGTH = 32
+
++    IV_LENGTH = 16
+
++
+
++    def __init__(self, pubkey):
+
++        self._rsa = RSA.importKey(pubkey.decode('base64'))
+
++
+
++    def _aes_encrypt(self, payload):
+
++        payload = pad(payload)
+
++        key = Random.get_random_bytes(self.KEY_LENGTH)
+
++        iv = Random.get_random_bytes(self.IV_LENGTH)
+
++        cipher = AES.new(key, AES.MODE_CBC, iv)
+
++
+
++        encrypted = cipher.encrypt(payload)
+
++        return key, (iv + encrypted)
+
++
+
++    def _rsa_encrypt(self, payload):
+
++        cipher = PKCS1_v1_5.new(self._rsa)
+
++        return cipher.encrypt(payload)
+
++
+
++    def encrypt(self, payload):
+
++        key, encrypted_payload = self._aes_encrypt(payload)
+
++        encrypted_key = self._rsa_encrypt(key.encode('base64'))  # why is bt doing a base64 here???
+
++
+
++        return '$'.join([
+
++            self.PREFIX,
+
++            encrypted_key.encode('base64'),
+
++            encrypted_payload.encode('base64'),
+
++        ]).replace('\n', '')
+@@ -0,0 +1,352 @@
++"""
+
++Client for Uber.
+
++"""
+
++
+
++import json
+
++from time import time
+
++import requests
+
++import random
+
++from uber import settings
+
++from uber import geolocation
+
++from uber.models import AppState, PaymentProfile, VehicleView, Place, SimpleLocation
+
++
+
++
+
++class UberClient(object):
+
++    ENDPOINT = 'https://cn{}.uber.com'.format(random.randint(1, 10))
+
++
+
++    def __init__(self, username, token):
+
++        self._email = username
+
++        self._token = token
+
++        self._headers = {
+
++            'Content-Type': 'application/json',
+
++            'User-Agent': settings.USER_AGENT,
+
++            'Accept-Language': 'en-US',
+
++        }
+
++
+
++        self._session = requests.session()
+
++
+
++    def _validate_message_response(self, data):
+
++        """
+
++        checks the message response for errors and raise exceptions accordingly
+
++ """
+
++        if data['messageType'] == 'Error':
+
++            raise UberException(data['description'], error_code=data.get('errorCode'))
+
++
+
++    def _validate_http_response(self, response):
+
++        """
+
++        checks http response for errors and raise exceptions accordingly
+
++ """
+
++        if not response.ok:
+
++            raise UberException(response.text, response.status_code)
+
++
+
++    @classmethod
+
++    def login(cls, email, password):
+
++        """
+
++        Login into Uber
+
++
+
++        Returns:
+
++            - a token string
+
++ """
+
++        uber_client = UberClient(email, None)
+
++
+
++        data = {
+
++            "password": hash_password(password),
+
++            "email": email,
+
++        }
+
++
+
++        response = uber_client._send_message(MessageTypes.LOGIN, params=data)
+
++        return response['token']
+
++
+
++    def _post(self, endpoint, data):
+
++        """
+
++        posts a json to the given endpoint
+
++ """
+
++        response = self._session.post(endpoint, json.dumps(data), headers=self._headers)
+
++        self._validate_http_response(response)
+
++
+
++        return response
+
++
+
++    def _send_message(self, message_type, params=None, location=None):
+
++        """
+
++        sends a message to uber.
+
++
+
++        Args:
+
++            - message_type: string of the message
+
++            - location: (optional) GPSLocation or any object that has longitude & latitude attributes
+
++ """
+
++
+
++        data = {
+
++            'messageType': message_type,
+
++            'epoch': get_epoch(),
+
++            'version': settings.UBER_VERSION,
+
++            'language': 'en',
+
++            'app': 'client',
+
++            'email': self._email,
+
++            'deviceModel': settings.DEVICE_MODEL,
+
++            'deviceOS': settings.DEVICE_OS,
+
++            'device': settings.DEVICE_NAME
+
++        }
+
++
+
++        if self._token:
+
++            data['token'] = self._token
+
++
+
++        self._copy_location_for_message(location, data)
+
++
+
++        if params:
+
++            data.update(params)
+
++
+
++        response = self._post(self.ENDPOINT, data)
+
++
+
++        data = response.json()
+
++        self._validate_message_response(data)
+
++
+
++        return data
+
++
+
++    def _send_event(self, event_name, location, params):
+
++        """
+
++        Feeds Uber's event system and keeps Uber happy.
+
++        Currently unused :P
+
++ """
+
++        data = {
+
++            'epoch': get_epoch(),
+
++            'version': settings.UBER_VERSION,
+
++            'language': 'en',
+
++            'app': 'client',
+
++            'email': self._email,
+
++            'deviceModel': settings.DEVICE_MODEL,
+
++            'deviceOS': settings.DEVICE_OS,
+
++            'device': settings.DEVICE_NAME,
+
++            'parameters': params,
+
++            'eventName': event_name,
+
++        }
+
++
+
++        self._post('http://events.uber.com/mobile/event/', data=data)
+
++
+
++    @classmethod
+
++    def _copy_location_for_message(cls, location, data):
+
++        """
+
++        Copies a location to the given data dict, as per the message specs
+
++ """
+
++        if location:
+
++            if isinstance(location, dict):
+
++                location = SimpleLocation(location)
+
++
+
++            data['latitude'] = location.latitude
+
++            data['longitude'] = location.longitude
+
++
+
++            if getattr(location, 'altitude', None):
+
++                data['altitude'] = location.altitude
+
++
+
++            if getattr(location, 'vertical_accuracy', None):
+
++                data['verticalAccuracy'] = location.vertical_accuracy
+
++
+
++            if getattr(location, 'horizontal_accuracy', None):
+
++                data['horizontalAccuracy'] = location.horizontal_accuracy
+
++
+
++    def _api_command(self, api_method, api_url, api_params):
+
++        params = {
+
++            'apiMethod': api_method,
+
++            'apiParameters': api_params,
+
++            'apiUrl': api_url
+
++        }
+
++
+
++        result = self._send_message(MessageTypes.API_COMMAND, params)
+
++        self._validate_api_call_response(result)
+
++
+
++        return AppState(result)
+
++
+
++    def _validate_api_call_response(self, result):
+
++        error = result['apiResponse'].get('error')
+
++        if error:
+
++            raise UberException(error['message'], error['statusCode'])
+
++
+
++    def delete_payment_profile(self, payment_profile):
+
++        """
+
++        deletes a payment profile
+
++ """
+
++        if isinstance(payment_profile, PaymentProfile):
+
++            payment_profile = payment_profile.id
+
++
+
++        url = '/payment_profiles/{}'.format(payment_profile)
+
++        params = {
+
++            'token': self._token,
+
++            '_LOCALE_': 'en',
+
++            'epoch': get_epoch(),
+
++        }
+
++
+
++        return self._api_command(ApiMethods.DELETE, url, params)
+
++
+
++    def add_payment(self, card_number, expiration_month, expiration_year, cvv, zipcode, billing_country_iso2="US"):
+
++        """
+
++        add a credit card to Uber.
+
++
+
++ """
+
++
+
++        import braintree
+
++        bt = braintree.Braintree(settings.BRAINTREE_PRODUCTION_KEY)
+
++
+
++        url = '/payment_profiles'
+
++        params = {
+
++            'card_number': bt.encrypt(card_number),
+
++
+
++            # interestingly enough, these 3 are available unencrypted in the payments_profiles
+
++            'card_expiration_month': bt.encrypt(expiration_month),
+
++            'card_expiration_year': bt.encrypt(expiration_year),
+
++            'billing_zip': str(zipcode),
+
++
+
++            'card_code': bt.encrypt(str(cvv)),
+
++            'billing_country_iso2': billing_country_iso2,
+
++            'use_case': 'personal',
+
++            'token': self._token,
+
++            '_LOCALE_': 'en',
+
++            'epoch': get_epoch(),
+
++        }
+
++
+
++        return self._api_command(ApiMethods.POST, url, params)
+
++
+
++    def nearby_places(self, query, location):
+
++        """
+
++        queries uber for nearby locations. Currently powered by foursquare
+
++ """
+
++        params = {
+
++            'searchTypes': ['places'],
+
++            'query': query
+
++        }
+
++
+
++        response = self._send_message(MessageTypes.LOCATION_SEARCH, params=params, location=location)
+
++        return [Place(x) for x in response['places']]
+
++
+
++    def ping(self, location):
+
++        """
+
++        'pings' uber and returns the state of the world. (nearby cars, pricing etc)
+
++ """
+
++        return AppState(self._send_message(MessageTypes.PING_CLIENT, location=location))
+
++
+
++    def request_pickup(self, vehicle_type, pickup_address, gps_location=None, payment_profile=None, use_credits=True):
+
++        """
+
++        request an uber pickup.
+
++
+
++        Args:
+
++            - vehicle_type: an id or a VehicleView instance of the ride you want
+
++            - pickup_address: geo-coded location or a string (if you're feeling frisky!)
+
++            - current_location: gps coords
+
++            - payment_profile: (optional) a payment profile id or an instance of PaymentProfile
+
++
+
++        Returns:
+
++            - app_state
+
++
+
++        To examine ride status, check the following:
+
++ """
+
++        if isinstance(vehicle_type, VehicleView):
+
++            vehicle_type = vehicle_type.id
+
++
+
++        if isinstance(payment_profile, PaymentProfile):
+
++            payment_profile = payment_profile.id
+
++
+
++        if isinstance(pickup_address, basestring):
+
++            search_result = geolocation.geolocate(pickup_address)
+
++            if not search_result:
+
++                raise UberLocationNotFound(u"Can't find location " + unicode(pickup_address))
+
++
+
++            pickup_address = search_result[0]
+
++
+
++        params = {
+
++            'pickupLocation': pickup_address,
+
++            'useCredits': use_credits,
+
++            'vehicleViewId': int(vehicle_type),
+
++        }
+
++
+
++        if payment_profile:
+
++            params['paymentProfileId'] = int(payment_profile)
+
++
+
++        response = self._send_message('Pickup', params=params, location=gps_location)
+
++        return AppState(response)
+
++
+
++    def cancel_pickup(self, location=None):
+
++        """
+
++        cancels current ride
+
++ """
+
++        return AppState(self._send_message('PickupCanceledClient', location=location))
+
++
+
++
+
++def hash_password(password):
+
++    """
+
++    hash the password, Uber-style.
+
++
+
++    How it works:
+
++        - for each character, calculate its md5 and hexify it.
+
++        - concat all of hexified hashes together
+
++        - lowercase it
+
++        - calculate md5 on the concatted buffer.
+
++        - lowercase it
+
++ """
+
++    from hashlib import md5
+
++
+
++    password = password.encode('utf8')
+
++    buff = ''.join([md5(x).hexdigest() for x in password])
+
++    return md5(buff).hexdigest()
+
++
+
++
+
++class Events(object):
+
++    """
+
++    event types that get submitted to Uber's analytics system
+
++ """
+
++
+
++    # "locationAltitude": 11.05551147460938,
+
++    # "locationVerticalAccuracy": 8,
+
++    # "requestGuid": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+
++    # "locationHorizontalAccuracy": 5
+
++    SIGNIN_REQUEST = 'SignInRequest'
+
++
+
++    # "clientId": 123456,
+
++    # "vehicleViewIds": [8],
+
++    # "reason": "ping",
+
++    # "vehicleViewId": 8,
+
++    # "locationAltitude": 12.00814819335938,
+
++    # "locationVerticalAccuracy": 8,
+
++    # "requestGuid": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+
++    # "locationHorizontalAccuracy": 10,
+
++    # "sessionHash": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+
++    NEAREST_CAB_REQUEST = 'NearestCabRequest'
+
++
+
++    MESSAGE_DISMISS = 'MessageDismiss'
+
++    CONFIRM_PAGE_VIEW = 'ConfirmPageView'
+
++    REQUEST_VEHICLE_RESPONSE = 'RequestVehicleResponse'
+
++
+
++    # "clientId": 1234567,
+
++    # "locationHorizontalAccuracy": 10,
+
++    # "locationVerticalAccuracy": 8,
+
++    # "locationAltitude": 12.00814819335938,
+
++    # "requestGuid": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+
++    # "latency": 0.5161130428314209,
+
++    # "statusCode": 200,
+
++    # "sessionHash": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+
++    CANCEL_TRIP_RESPONSE = 'CancelTripResponse'
+
++
+
++
+
++class MessageTypes(object):
+
++    LOCATION_SEARCH = 'LocationSearch'
+
++    PING_CLIENT = 'PingClient'
+
++    LOGIN = 'Login'
+
++    API_COMMAND = 'ApiCommand'
+
++
+
++
+
++class ApiMethods(object):
+
++    DELETE = 'DELETE'
+
++    POST = 'POST'
+
++
+
++
+
++class UberException(Exception):
+
++    def __init__(self, description, error_code=None, **kwargs):
+
++        super(Exception, self).__init__(description)
+
++        self.description = description
+
++        self.error_code = error_code
+
++        self.__dict__.update(kwargs)
+
++
+
++
+
++def get_epoch():
+
++    return int(time() * 1000)
+
++
+
++
+
++class UberLocationNotFound(UberException):
+
++    pass
+@@ -0,0 +1,49 @@
++import requests
+
++
+
++
+
++class GeolocationExcetion(Exception):
+
++    pass
+
++
+
++
+
++def geolocate(address, bounds=None, country=None, administrative_area=None, sensor=False):
+
++    """
+
++    Resolves address using Google Maps API, and performs some massaging to the output result.
+
++    Provided for convenience, as Uber relies on this heavily, and the desire to give a simple 'batteries included' experience.
+
++
+
++    See https://developers.google.com/maps/documentation/geocoding/ for more details
+
++ """
+
++    params = {
+
++        'address': address,
+
++        'sensor': str(sensor).lower()
+
++    }
+
++
+
++    components = []
+
++    if country:
+
++        components.append('country:' + country)
+
++
+
++    if administrative_area:
+
++        components.append('administrative_area:' + administrative_area)
+
++
+
++    if bounds:
+
++        params['bounds'] = '|'.join(['{},{}'.format(x.latitude, x.longitude) for x in bounds])
+
++
+
++    if components:
+
++        params['components'] = '|'.join(components)
+
++
+
++    response = requests.get('http://maps.googleapis.com/maps/api/geocode/json', params=params)
+
++    if not response.ok:
+
++        raise GeolocationExcetion(response.text)
+
++
+
++    data = response.json()
+
++
+
++    if data['status'] not in ['OK', 'ZERO_RESULTS']:
+
++        raise GeolocationExcetion(data)
+
++
+
++    all_results = data.get('results', [])
+
++    for result in all_results:
+
++        coords = result.get('geometry', {}).get('location')
+
++        if coords:
+
++            result['latitude'] = coords['lat']
+
++            result['longitude'] = coords['lng']
+
++
+
++    return all_results
+@@ -0,0 +1,202 @@
++from StringIO import StringIO
+
++from datetime import datetime
+
++import os
+
++from pprint import pformat
+
++from dateutil.parser import DEFAULTPARSER as dateparser
+
++
+
++
+
++class Model(object):
+
++    def __init__(self, data=None):
+
++        self._data = data or {}
+
++
+
++    def __repr__(self):
+
++        return "{}({})".format(self.__class__.__name__, pformat(self._data))
+
++
+
++    def __str__(self):
+
++        return ModelPrinter().pprint(self)
+
++
+
++    def __eq__(self, other):
+
++        return self._data == other._data
+
++
+
++    @property
+
++    def raw(self):
+
++        return self._data
+
++
+
++
+
++class Field(object):
+
++    """
+
++    Basic json field. Returns as is.
+
++ """
+
++    def __init__(self, name, optional=False, writeable=False):
+
++        """
+
++        Args:
+
++             - name: the key of the json field
+
++             - optional: if not True, __get__ will raise an exception on unavailable keys
+
++             - writeable: makes the field writeable (unsupported on most field types)
+
++ """
+
++        self._name = name
+
++        self._optional = optional
+
++        self._writeable = writeable
+
++
+
++    def __get__(self, instance, owner):
+
++        value = instance._data.get(self._name)
+
++        if value is None and not self._optional:
+
++            raise KeyError(self._name)
+
++
+
++        return self.to_python(value)
+
++
+
++    def __set__(self, instance, value):
+
++        if not self._writeable:
+
++            raise AttributeError("can't set attribute")
+
++
+
++        instance._data[self._name] = self.from_python(value)
+
++
+
++    def to_python(self, value):
+
++        return value
+
++
+
++    def from_python(self, python_value):
+
++        return python_value
+
++
+
++
+
++class ModelField(Field):
+
++    """
+
++    Translates a field to the given Model type
+
++ """
+
++    def __init__(self, name, model_type, **kwargs):
+
++        super(ModelField, self).__init__(name, **kwargs)
+
++        self._model_type = model_type
+
++
+
++    def to_python(self, value):
+
++        if value is None:
+
++            return None
+
++
+
++        return self._model_type(value)
+
++
+
++
+
++class ListField(Field):
+
++    """
+
++    Translates a field to a list, where the individual values are the result of calling value_func
+
++    If the list does not exists and the field is optional, returns []
+
++ """
+
++    def __init__(self, name, item_func, **kwargs):
+
++        super(ListField, self).__init__(name, **kwargs)
+
++        self._item_type = item_func
+
++
+
++    def to_python(self, value):
+
++        if value is None:
+
++            return []
+
++
+
++        return [self._item_type(x) for x in value]
+
++
+
++
+
++class DictField(Field):
+
++    """
+
++    Translates a field to a dict, where the individual values are the result of calling value
+
++    If the list does not exists and the field is optional, returns {}
+
++ """
+
++    def __init__(self, name, value, key=None, **kwargs):
+
++        """
+
++        Args:
+
++            - name: the field name
+
++            - value: a type (or a callable) of the value
+
++            - key: a type (or a callable) of the keys
+
++ """
+
++        super(DictField, self).__init__(name, **kwargs)
+
++        self._item_type = value
+
++        self._key_func = key or (lambda x: x)
+
++
+
++    def to_python(self, value):
+
++        if value is None:
+
++            return {}
+
++
+
++        return {self._key_func(k): self._item_type(v) for k, v in value.items()}
+
++
+
++
+
++class DateTimeField(Field):
+
++    """
+
++    Parses a datetime string to a string
+
++ """
+
++    def to_python(self, value):
+
++        return dateparser.parse(value)
+
++
+
++
+
++class EpochField(Field):
+
++    def to_python(self, value):
+
++        return datetime.utcfromtimestamp(value/1000.0)
+
++
+
++
+
++# provided for readability purposes
+
++BooleanField = Field
+
++FloatField = Field
+
++NumberField = Field
+
++StringField = Field
+
++
+
++
+
++class ModelPrinter(object):
+
++    """
+
++    a pretty-printer. Inspired by pprint.py
+
++    getting good results out of pprint was way too hacky, mainly due to the different naming convention of the fields in
+
++    __repr__ vs __str__
+
++ """
+
++    def __init__(self):
+
++        self._stream = StringIO()
+
++        self._padding = ' '
+
++
+
++    def pprint(self, obj):
+
++        self._pprint_model(obj, 0)
+
++        self._stream.seek(0)
+
++        return self._stream.getvalue()
+
++
+
++    def _write(self, data):
+
++        self._stream.write(data)
+
++
+
++    def _write_padding(self, data='', depth=0):
+
++        data = self._padding * depth + data
+
++        self._stream.write(data)
+
++
+
++    def _pprint_obj(self, obj, depth):
+
++        if isinstance(obj, Model):
+
++            self._pprint_model(obj, depth)
+
++        elif isinstance(obj, list):
+
++            self._write('[\n')
+
++            self._pprint_array(obj, depth + 1)
+
++            self._write_padding(']', depth)
+
++        elif isinstance(obj, dict):
+
++            self._write('{\n')
+
++            self._pprint_dict(obj, depth + 1)
+
++            self._write_padding('}', depth)
+
++        elif isinstance(obj, datetime):
+
++            self._write(str(obj))
+
++        else:
+
++            self._write(pformat(obj, indent=1, depth=depth))
+
++
+
++    def _pprint_model(self, obj, depth):
+
++        self._write(type(obj))
+
++        self._write('\n')
+
++        depth += 1
+
++        for name, field in obj.__class__.__dict__.items():
+
++            if not isinstance(field, Field):
+
++                continue
+
++
+
++            value = getattr(obj, name)
+
++            if value is None:
+
++                continue
+
++
+
++            self._write_padding(name + ': ', depth)
+
++            self._pprint_obj(value, depth)
+
++
+
++            self._write('\n')
+
++
+
++        self._stream.seek(-1, os.SEEK_CUR)
+
++
+
++    def _pprint_dict(self, dict_field, depth):
+
++        for k, v in dict_field.items():
+
++            self._write_padding(depth=depth, data='{}:\t'.format(k))
+
++            self._pprint_obj(depth=depth, obj=v)
+
++            self._write('\n')
+
++
+
++    def _pprint_array(self, array, depth):
+
++        for item in array:
+
++            self._write_padding(depth=depth)
+
++            self._pprint_obj(depth=depth, obj=item)
+
++            self._write(',\n')
+@@ -0,0 +1,374 @@
++from .model_base import ModelField, Model, DictField, Field, BooleanField, NumberField, ListField, FloatField,\
+
++    DateTimeField, StringField, EpochField
+
++
+
++
+
++class GPSLocation(object):
+
++    """
+
++    used to report extended gps information  to Uber
+
++ """
+
++
+
++    def __init__(self, latitude, longitude, altitude=None, vertical_accuracy=None, horizontal_accuracy=None):
+
++        self.latitude = latitude
+
++        self.longitude = longitude
+
++        self.altitude = altitude
+
++        self.vertical_accuracy = vertical_accuracy
+
++        self.horizontal_accuracy = horizontal_accuracy
+
++
+
++
+
++class UberCarType(object):
+
++    """
+
++    The "fixed" Uber car types. Provided for convenience.
+
++    On occasion Uber will add new car types (kitty car, ice cream truck etc). You can see all car types by examining
+
++    app_state.city.vehicle_views
+
++ """
+
++    BLACK_CAR = 1
+
++    UBERX = 8
+
++    SUV = 2
+
++    TAXI = 69
+
++
+
++
+
++class ClientStatus(object):
+
++    LOOKING = 'Looking' # user is looking around
+
++    DISPATCHING = 'Dispatching'
+
++    WAITING_FOR_PICKUP = 'WaitingForPickup'
+
++
+
++
+
++class RequestNote(object):
+
++    REQUEST_EXPIRED = 'RequestExpired'
+
++
+
++
+
++class DriverStatus(object):
+
++    ACCEPTED = 'Accepted'
+
++
+
++
+
++class SystemMessage(Model):
+
++    """
+
++    system messages by Uber. These are HTML messages.
+
++ """
+
++    id = Field('id')
+
++    etag = Field('eTag')
+
++    display_properties = Field('displayProps')
+
++    modules = Field('modules')
+
++
+
++
+
++class SimpleLocation(Model):
+
++    latitude = Field('latitude')
+
++    longitude = Field('longitude')
+
++
+
++
+
++class VehicleLocation(SimpleLocation):
+
++    """
+
++    represents a vehicle location at a given time
+
++ """
+
++    epoch = EpochField('epoch')
+
++    course = Field('course', optional=True)
+
++
+
++
+
++class Fare(Model):
+
++    id = Field('id')
+
++    speed_threshold_mps = Field('speedThresholdMps')
+
++    base = Field('base')
+
++    per_minute = Field('perMinute')
+
++    per_distance_unit = Field('perDistanceUnit')
+
++    distance_unit = Field('distanceUnit')
+
++    type = Field('type')
+
++    minimum = Field('minimum')
+
++    cancellation = Field('cancellation')
+
++
+
++
+
++class Place(Model):
+
++    """
+
++    Place metadata
+
++ """
+
++    id = NumberField('id')
+
++
+
++    # 'foursquare'
+
++    type = StringField('type')
+
++
+
++    # 'Gym at 353 king st'
+
++    nickname = StringField('nickname')
+
++
+
++    formatted_address = Field('formatted_address')
+
++
+
++    distance = FloatField('distance')
+
++    latitude = FloatField('latitude')
+
++    longitude = FloatField('longitude')
+
++
+
++    # GMaps-style components
+
++    address_components = Field('address_components')
+
++
+
++
+
++class Image(Model):
+
++    url = Field('url')
+
++    width = NumberField('width')
+
++    height = NumberField('height')
+
++
+
++
+
++class WebView(Model):
+
++    id = Field('id')
+
++    html = StringField('html')
+
++
+
++
+
++class Surge(Model):
+
++    """
+
++    Everyone's favorite surge pricing.
+
++ """
+
++    fare_id = NumberField('fareId')
+
++    multiplier = FloatField('multiplier')
+
++    expiration_time = NumberField('expirationTime')
+
++    base_fee = Field('base')
+
++    per_distance_unit = Field('perDistanceUnit')
+
++    distance_unit = Field('distanceUnit')
+
++    per_minute = Field('perMinute')
+
++    speed_threshold_mps = NumberField('speedThresholdMps')
+
++    minimum_fee = Field('minimum')
+
++    cancellation_fee = Field('cancellation')
+
++    web_view = ModelField('webView', WebView)
+
++
+
++
+
++class VehicleView(Model):
+
++    id = NumberField('id')
+
++    fare = ModelField('fare', Fare)
+
++    map_images = ListField('mapImages', Image)
+
++    mono_images = ListField('monoImages', Image)
+
++
+
++    # "Black Car", "SUV", "UberX", "TAXI"
+
++    description = Field('description')
+
++
+
++    pickup_eta_string = Field('pickupEtaString')
+
++    allow_fare_estimate = BooleanField('allowFareEstimate')
+
++    max_fare_splits = NumberField('maxFareSplits')
+
++
+
++    capacity = NumberField('capacity')
+
++    fare_details_url = Field('fareDetailsUrl', optional=True)
+
++    surge = ModelField('surge', Surge, optional=True)
+
++
+
++    # ui strings
+
++    confirm_pickup_button_string = Field('confirmPickupButtonString')
+
++    set_pickup_location_string = Field('setPickupLocationString')
+
++    request_pickup_button_string = Field('requestPickupButtonString')
+
++    pickup_button_string = Field('pickupButtonString')
+
++    none_available_string = Field('noneAvailableString')
+
++
+
++
+
++class City(Model):
+
++    name = Field('cityName')
+
++    currency_code = Field('currencyCode')
+
++
+
++    # all the vehicle types
+
++    vehicle_views = DictField('vehicleViews', VehicleView, key=int)
+
++    vehicle_views_order = Field('vehicleViewsOrder')
+
++    default_vehicle_view_id = NumberField('defaultVehicleViewId')
+
++
+
++
+
++class NearbyVehicles(Model):
+
++    eta_string = Field('etaString', optional=True)
+
++    eta_string_short = Field('etaStringShort', optional=True)
+
++    min_eta = NumberField('minEta', optional=True)
+
++    sorry_message = Field('sorryMsg', optional=True)
+
++    vehicle_paths = DictField('vehiclePaths', lambda x: [VehicleLocation(location) for location in x], optional=True)
+
++
+
++    @property
+
++    def is_available(self):
+
++        return self.sorry_message is None
+
++
+
++
+
++class PaymentProfile(Model):
+
++    id = NumberField('id')
+
++    billing_country_iso2 = Field('billingCountryIso2', optional=True)
+
++    card_type = Field('cardType')
+
++    card_number = Field('cardNumber')
+
++    account_name = Field('accountName', optional=True)
+
++    token_type = Field('tokenType', optional=True)
+
++    card_expiration = DateTimeField('cardExpiration')
+
++
+
++    # personal/business(?)
+
++    use_case = Field('useCase')
+
++
+
++
+
++class Experiment(Model):
+
++    treatment_group_serial = Field('treatment_group_serial', optional=True)
+
++
+
++    # 'untreated', 'experiment', 'control' or weird stuff like 'g20g20_button'
+
++    treatment_group_name = Field('treatment_group_name')
+
++
+
++    def __init__(self, name, data):
+
++        super(Experiment, self).__init__(data)
+
++        self._name = name
+
++
+
++    @property
+
++    def name(self):
+
++        """
+
++        experiment name - 'Minneapolis_Free_G10G10', 'new_user_splash_testing', 'first_experiment_magical_test51' etc
+
++ """
+
++        return self._name
+
++
+
++
+
++class CreditBalance(Model):
+
++    """
+
++    Didn't have any credits :P
+
++ """
+
++    pass
+
++
+
++
+
++class Driver(Model):
+
++    """
+
++    Details about the driver of the ride.
+
++ """
+
++    id = Field('id')
+
++
+
++    # never saw this set to True.
+
++    display_company = BooleanField('displayCompany')
+
++
+
++    partner_company = Field('partnerCompany')
+
++    location = ModelField('location', SimpleLocation)
+
++    rating = FloatField('rating')
+
++    status = Field('status')
+
++    phone = Field('mobile')
+
++    name = Field('name')
+
++    picture_url = Field('pictureUrl')
+
++
+
++
+
++class FeedbackType(Model):
+
++    id = Field('id')
+
++    type = Field('type')
+
++    description = Field('description')
+
++
+
++
+
++class VehicleType(Model):
+
++    id = NumberField('id')
+
++    capacity = NumberField('capacity')
+
++    make = Field('make')
+
++    model = Field('model')
+
++
+
++
+
++class Vehicle(Model):
+
++    uuid = Field('uuid')
+
++
+
++    vehicle_type = ModelField('vehicleType', VehicleType)
+
++    exterior_color = Field('exteriorColor')
+
++    interior_color = Field('interiorColor')
+
++    license_plate = Field('licensePlate')
+
++
+
++    license_plate_country_id = Field('licensePlateCountryId')
+
++    license_plate_state = Field('licensePlateState')
+
++    vehicle_view_id = Field('vehicleViewId')
+
++    year = NumberField('year')
+
++
+
++    vehicle_path = ListField('vehiclePath', VehicleLocation)
+
++
+
++
+
++class TripState(object):
+
++    DISPATCHING = 0
+
++    DRIVING_TO_PICKUP = 1
+
++    IN_PROGRESS = 2
+
++
+
++
+
++class Trip(Model):
+
++    """
+
++    Represents a trip in all of its states
+
++ """
+
++    # ride info
+
++    driver = ModelField('driver', Driver, optional=True)
+
++    vehicle = ModelField('vehicle', Vehicle, optional=True)
+
++    is_zero_tolerance = BooleanField('isZeroTolerance', optional=True)
+
++    feedback_types = ListField('feedbackTypes', FeedbackType, optional=True)
+
++    eta = NumberField('eta', optional=True)
+
++    eta_string = Field('etaString', optional=True)
+
++    eta_string_short = Field('etaStringShort', optional=True)
+
++
+
++    dispatch_percent = FloatField('dispatchPercent', optional=True)
+
++
+
++    payment_profile_id = NumberField('paymentProfileId')
+
++    use_credits = BooleanField('useCredits')
+
++
+
++    # geolocated
+
++    pickup_location = Field('pickupLocation')
+
++
+
++    cancel_dialog = Field('cancelDialog')
+
++
+
++    @property
+
++    def state(self):
+
++        """
+
++        The 'state' of the trip (derived from the model data)
+
++ """
+
++        if self.dispatch_percent is not None:
+
++            return TripState.DISPATCHING
+
++        elif self.eta is not None:
+
++            return TripState.DRIVING_TO_PICKUP
+
++        else:
+
++            return TripState.IN_PROGRESS
+
++
+
++
+
++class Client(Model):
+
++    id = NumberField('id')
+
++
+
++    # Oops :P
+
++    rating = FloatField('rating')
+
++
+
++    has_american_mobile = BooleanField('hasAmericanMobile')
+
++    credit_balances = ListField('creditBalances', CreditBalance)
+
++    payment_profiles = ListField('paymentProfiles', PaymentProfile)
+
++    fare_split_fee_string = Field('fareSplitFeeString')
+
++    last_selected_payment_profile_id = Field('lastSelectedPaymentProfileId')
+
++    mobile_digits = Field('mobileDigits')
+
++    is_admin = BooleanField('isAdmin')
+
++    role = Field('role')
+
++    referral_code = Field('referralCode')
+
++    email = Field('email')
+
++    picture_url = Field('pictureUrl')
+
++    referral_url = Field('referralUrl')
+
++    first_name = Field('firstName')
+
++
+
++    # "US"
+
++    mobile_country_iso2 = Field('mobileCountryIso2')
+
++
+
++    mobile = Field('mobile')
+
++    last_name = Field('lastName')
+
++    mobile_country_id = NumberField('mobileCountryId')
+
++    login_token = Field('token')
+
++    has_to_opt_in_sms_notifications = BooleanField('hasToOptInSmsNotifications')
+
++
+
++    # phone country code (+1 for US)
+
++    mobile_country_code = Field('mobileCountryCode')
+
++
+
++    promotion = Field('promotion')
+
++    has_confirmed_mobile = BooleanField('hasConfirmedMobile')
+
++
+
++    # a value from ClientStatus
+
++    status = Field('status', optional=True)
+
++
+
++    # a value from RequestNote
+
++    last_request_note = Field('lastRequestNote', optional=True)
+
++
+
++    last_request_msg = Field('lastRequestMsg', optional=True)
+
++
+
++    @property
+
++    def active_experiments(self):
+
++        return {k: Experiment(k, v) for k, v in self._data['activeExperiments'].items()}
+
++
+
++
+
++class ApiResponse(Model):
+
++    data = Field('data', optional=True)
+
++    error = Field('error', optional=True)
+
++
+
++    @property
+
++    def valid(self):
+
++        return self.error is None
+
++
+
++
+
++class AppState(Model):
+
++    city = ModelField('city', City)
+
++    nearby_vehicles = DictField('nearbyVehicles', NearbyVehicles, key=int, optional=True)
+
++    client = ModelField('client', Client)
+
++
+
++    # available when we order a ride
+
++    trip = ModelField('trip', Trip, optional=True)
+
++
+
++    # This is present when performing ApiCommands (add/remove payments), and is usually the raw data from the external
+
++    # service (Braintree, PayPal etc) with a bit of Uber stuff on top.
+
++    # So essentially, a lot of times the data will appear similar, but be different (camelCase vs underscore, more
+
++    # fields etc).
+
++    # Therefor, I've decided to just keep it as is.
+
++    # The Uber client itself most likely never parses this part other than the error segment
+
++    api_response = ModelField('apiResponse', ApiResponse, optional=True)
+@@ -0,0 +1,6 @@
++BRAINTREE_PRODUCTION_KEY = 'MIIBCgKCAQEA2YRfM1bcfLB786t2sV7W4jeeWJDmGtK3MGfmIwzjdgKM8hZa9bR28iZKwgxy9aErnkuhdXLLnmUz+kJ1dIF6uebyKrFWwpJmkeE3QP74ImUVaR3w0qC4MJyNdKJjrL42uYkURjfx6ymDs8DD61EiytETYunq3HfUCpw+JtLQBAEvPc2Zhz52E9hBPWbeh0k7lylLkOC1KcTxJgYQ5LAp3zvy+xPCwwAv1GWCkjHgbV5YF10zasERU4mBTozsI99lbxizkrzR7AnwQzHx3/7iTQ16i0EQf+LxrMTVsVSdqzpnnrZRSHnH29KKbB080k2I/v2tbS1CjHC9DkyufKxLfwIDAQAB' # noqa
+
++UBER_VERSION = '2.8.17'
+
++DEVICE_OS = '7.0.3'
+
++DEVICE_MODEL = 'iPhone6,1'
+
++DEVICE_NAME = 'iphone'
+
++USER_AGENT = 'client/iphone/2.8.17'

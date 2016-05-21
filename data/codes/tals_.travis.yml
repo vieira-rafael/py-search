@@ -1,0 +1,3 @@
+language: pythonpython: - "2.7" - "pypy"
+install: - pip install coveralls - python setup.py -q install
+# command to run testsscript: - coverage run --source=uber setup.py test

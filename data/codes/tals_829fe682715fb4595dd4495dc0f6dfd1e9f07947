@@ -1,0 +1,30 @@
+@@ -5,14 +5,13 @@
+ import json
+
+ from time import time
+
+ import requests
+
+-import random
+
+ from uber import settings
+
+ from uber import geolocation
+
+ from uber.models import AppState, PaymentProfile, VehicleView, Place, SimpleLocation, UberVehicleType
+
+ 
+
+ 
+
+ class UberClient(object):
+
+-    ENDPOINT = 'https://cn{}.uber.com'.format(random.randint(1, 10))
+
++    ENDPOINT = 'https://cn1.uber.com'
+
+ 
+
+ def __init__(self, username, token):
+
+ self._email = username

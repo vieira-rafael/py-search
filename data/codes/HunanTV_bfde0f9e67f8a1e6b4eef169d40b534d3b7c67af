@@ -1,0 +1,542 @@
+@@ -61,7 +61,7 @@ clean:
+ cleanmeta:
+
+ 	-rm -rf redis_trib.egg-info/
+
+ 
+
+-cleanall: clean cleanmeta
+
++cleanall:clean cleanmeta
+
+ 	-find . -type f -name "*.pyc" -exec rm -f "{}" \;
+
+ 
+
+ build:
+@@ -18,6 +18,10 @@ Shutdown an empty cluster (there is only one node left and no keys in the node)
+ 
+
+     redis-trib.py shutdown NODE_HOST:PORT
+
+ 
+
++Fix a migrating slot in a node
+
++
+
++    redis-trib.py fix HOST_HOST:PORT
+
++
+
+ Support master nodes only. Auto slots balancing.
+
+ 
+
+ The Python API
+@@ -36,6 +40,9 @@ The Python API
+     # shut down the cluster
+
+     redistrib.communicate.shutdown_cluster('127.0.0.1', 7001)
+
+ 
+
++    # fix a migrating slot in a node
+
++    redistrib.communicate.fix_migrating('127.0.0.1', 7001)
+
++
+
+ See also https://github.com/antirez/redis/blob/3.0/src/redis-trib.rb
+
+ 
+
+ The `join_cluster` function takes 2 optional arguments `balancer` and `balance_plan`. The former is an object for calculating the weights of cluster nodes, and the latter is a function that calculates how the slots migrate to balance the load between nodes.
+@@ -11,6 +11,8 @@
+ PAT_CLUSTER_ENABLED = re.compile('cluster_enabled:([01])')
+
+ PAT_CLUSTER_STATE = re.compile('cluster_state:([a-z]+)')
+
+ PAT_CLUSTER_SLOT_ASSIGNED = re.compile('cluster_slots_assigned:([0-9]+)')
+
++PAT_MIGRATING_IN = re.compile(r'\[(?P<slot>[0-9]+)-<-(?P<id>\w+)\]$')
+
++PAT_MIGRATING_OUT = re.compile(r'\[(?P<slot>[0-9]+)->-(?P<id>\w+)\]$')
+
+ 
+
+ # One Redis cluster requires at least 16384 slots
+
+ SLOT_COUNT = 16384
+@@ -123,12 +125,16 @@ def _migr_keys(src_talker, target_host, target_port, slot):
+                     src_talker.port, target_host, target_port, m)
+
+ 
+
+ 
+
+-def _migr_slot(source_node, target_node, migrate_count, nodes):
+
++def _migr_slots(source_node, target_node, migrate_count, nodes):
+
+     logging.info(
+
+ 'Migrating %d slots from %s<%s:%d> to %s<%s:%d>', migrate_count,
+
+         source_node.node_id, source_node.host, source_node.port,
+
+         target_node.node_id, target_node.host, target_node.port)
+
++    for slot in source_node.assigned_slots[:migrate_count]:
+
++        _migr_one_slot(source_node, target_node, slot, nodes)
+
++
+
+ 
+
++def _migr_one_slot(source_node, target_node, slot, nodes):
+
+ def expect_talk_ok(m, slot):
+
+ if m.lower() != 'ok':
+
+ raise RedisStatusError('\n'.join([
+@@ -139,27 +145,26 @@ def expect_talk_ok(m, slot):
+ 
+
+     source_talker = source_node.talker()
+
+     target_talker = target_node.talker()
+
+-    for slot in source_node.assigned_slots[:migrate_count]:
+
+-        expect_talk_ok(
+
+-            target_talker.talk('cluster', 'setslot', slot, 'importing',
+
+-                               source_node.node_id),
+
+-            slot)
+
+-        expect_talk_ok(
+
+-            source_talker.talk('cluster', 'setslot', slot, 'migrating',
+
+-                               target_node.node_id),
+
+-            slot)
+
+-        _migr_keys(source_talker, target_node.host, target_node.port, slot)
+
+-
+
+-        for node in nodes:
+
+-            if node.node_id == source_node.node_id:
+
+-                continue
+
+-            t = node.talker()
+
+-            expect_talk_ok(t.talk(
+
+-                'cluster', 'setslot', slot, 'node', target_node.node_id), slot)
+
+-        expect_talk_ok(source_talker.talk(
+
+-            'cluster', 'setslot', slot, 'node', target_node.node_id), slot)
+
+-        expect_talk_ok(target_talker.talk(
+
++    expect_talk_ok(
+
++        target_talker.talk('cluster', 'setslot', slot, 'importing',
+
++                           source_node.node_id),
+
++        slot)
+
++    expect_talk_ok(
+
++        source_talker.talk('cluster', 'setslot', slot, 'migrating',
+
++                           target_node.node_id),
+
++        slot)
+
++    _migr_keys(source_talker, target_node.host, target_node.port, slot)
+
++
+
++    for node in nodes:
+
++        if node.node_id == source_node.node_id:
+
++            continue
+
++        t = node.talker()
+
++        expect_talk_ok(t.talk(
+
+ 'cluster', 'setslot', slot, 'node', target_node.node_id), slot)
+
++    expect_talk_ok(source_talker.talk(
+
++        'cluster', 'setslot', slot, 'node', target_node.node_id), slot)
+
++    expect_talk_ok(target_talker.talk(
+
++        'cluster', 'setslot', slot, 'node', target_node.node_id), slot)
+
+ 
+
+ 
+
+ def join_cluster(cluster_host, cluster_port, newin_host, newin_port,
+@@ -201,7 +206,7 @@ def join_cluster(cluster_host, cluster_port, newin_host, newin_port,
+             nodes.append(node)
+
+ 
+
+ for source, target, count in balance_plan(nodes, balancer):
+
+-            _migr_slot(source, target, count, nodes)
+
++            _migr_slots(source, target, count, nodes)
+
+ finally:
+
+         t.close()
+
+ for n in nodes:
+@@ -229,10 +234,10 @@ def quit_cluster(host, port):
+ 
+
+         mig_slots_to_each = len(myself.assigned_slots) / len(nodes)
+
+ for node in nodes[:-1]:
+
+-            _migr_slot(myself, node, mig_slots_to_each, nodes)
+
++            _migr_slots(myself, node, mig_slots_to_each, nodes)
+
+ del myself.assigned_slots[:mig_slots_to_each]
+
+         node = nodes[-1]
+
+-        _migr_slot(myself, node, len(myself.assigned_slots), nodes)
+
++        _migr_slots(myself, node, len(myself.assigned_slots), nodes)
+
+ 
+
+         logging.info('Migrated for %s / Broadcast a `forget`', myself.node_id)
+
+ for node in nodes:
+@@ -269,3 +274,49 @@ def shutdown_cluster(host, port):
+         logging.debug('Ask `cluster delslots` Rsp %s', m)
+
+ finally:
+
+         t.close()
+
++
+
++
+
++def fix_migrating(host, port):
+
++    nodes = dict()
+
++    mig_srcs = []
+
++    mig_dsts = []
+
++    t = Talker(host, port)
+
++    try:
+
++        m = t.talk_raw(CMD_CLUSTER_NODES)
+
++        logging.debug('Ask `cluster nodes` Rsp %s', m)
+
++        for node_info in m.split('\n'):
+
++            if len(node_info) == 0:
+
++                continue
+
++            node = ClusterNode(*node_info.split(' '))
+
++            nodes[node.node_id] = node
+
++
+
++            search = PAT_MIGRATING_IN.search(node_info)
+
++            if search is not None:
+
++                mig_dsts.append((node, search.groupdict()))
+
++
+
++            search = PAT_MIGRATING_OUT.search(node_info)
+
++            if search is not None:
+
++                mig_srcs.append((node, search.groupdict()))
+
++
+
++        for n, args in mig_dsts:
+
++            node_id = args['id']
+
++            if node_id not in nodes:
+
++                logging.error('Fail to fix %s:%d <- (referenced from %s:%d)'
+
++                              ' - node %s is missing', n.host, n.port,
+
++                              host, port, node_id)
+
++                continue
+
++            _migr_one_slot(nodes[node_id], n, int(args['slot']),
+
++                           nodes.itervalues())
+
++        for n, args in mig_srcs:
+
++            node_id = args['id']
+
++            if node_id not in nodes:
+
++                logging.error('Fail to fix %s:%d -> (referenced from %s:%d)'
+
++                              ' - node %s is missing', n.host, n.port,
+
++                              host, port, node_id)
+
++                continue
+
++            _migr_one_slot(n, nodes[node_id], int(args['slot']),
+
++                           nodes.itervalues())
+
++    finally:
+
++        t.close()
+
++        for n in nodes.itervalues():
+
++            n.close()
+@@ -28,6 +28,10 @@ def shutdown(host_port):
+     communicate.shutdown_cluster(*_parse_host_port(host_port))
+
+ 
+
+ 
+
++def fix(host_port):
+
++    communicate.fix_migrating(*_parse_host_port(host_port))
+
++
+
++
+
+ def main():
+
+ if len(sys.argv) < 2:
+
+ print >> sys.stderr, 'Usage:'
+@@ -4,7 +4,7 @@
+ 
+
+ setup(
+
+ name='redis-trib',
+
+-    version='0.1.3',
+
++    version='0.1.4',
+
+ author='Neuron Teckid',
+
+ author_email='lene13@gmail.com',
+
+ license='MIT',
+@@ -4,7 +4,7 @@
+ 
+
+ import redistrib.communicate as comm
+
+ from redistrib.exceptions import RedisStatusError
+
+-from redistrib.clusternode import ClusterNode
+
++from redistrib.clusternode import ClusterNode, Talker, CMD_CLUSTER_NODES
+
+ 
+
+ 
+
+ class ApiTest(unittest.TestCase):
+@@ -60,3 +60,78 @@ def test_api(self):
+         comm.shutdown_cluster('127.0.0.1', 7101)
+
+ 
+
+ self.assertRaisesRegexp(ResponseError, 'CLUSTERDOWN .*', rc.get, 'key')
+
++
+
++    def test_fix(self):
+
++        def migrate_one_slot(nodes, _):
+
++            if nodes[0].port == 7000:
+
++                source, target = nodes
+
++            else:
+
++                target, source = nodes
+
++            return [(source, target, 1)]
+
++
+
++        comm.start_cluster('127.0.0.1', 7100)
+
++        rc = RedisCluster([{'host': '127.0.0.1', 'port': 7100}])
+
++        comm.join_cluster('127.0.0.1', 7100, '127.0.0.1', 7101,
+
++                          balance_plan=migrate_one_slot)
+
++
+
++        rc.set('h-893', 'I am in slot 0')
+
++        comm.fix_migrating('127.0.0.1', 7100)
+
++        self.assertEqual('I am in slot 0', rc.get('h-893'))
+
++
+
++        t7100 = Talker('127.0.0.1', 7100)
+
++        m = t7100.talk_raw(CMD_CLUSTER_NODES)
+
++        nodes = []
+
++        for node_info in m.split('\n'):
+
++            if len(node_info) == 0:
+
++                continue
+
++            nodes.append(ClusterNode(*node_info.split(' ')))
+
++        self.assertEqual(2, len(nodes))
+
++
+
++        if nodes[0].port == 7100:
+
++            n7100, n7101 = nodes
+
++        else:
+
++            n7101, n7100 = nodes
+
++        t7100.talk('cluster', 'setslot', 0, 'importing', n7101.node_id)
+
++
+
++        comm.fix_migrating('127.0.0.1', 7100)
+
++        self.assertEqual('I am in slot 0', rc.get('h-893'))
+
++
+
++        m = t7100.talk_raw(CMD_CLUSTER_NODES)
+
++        nodes = []
+
++        for node_info in m.split('\n'):
+
++            if len(node_info) == 0:
+
++                continue
+
++            nodes.append(ClusterNode(*node_info.split(' ')))
+
++        self.assertEqual(2, len(nodes))
+
++        if nodes[0].port == 7100:
+
++            n7100, n7101 = nodes
+
++        else:
+
++            n7101, n7100 = nodes
+
++        self.assertEqual(16384, len(n7100.assigned_slots))
+
++        self.assertEqual(0, len(n7101.assigned_slots))
+
++
+
++        t7101 = Talker('127.0.0.1', 7101)
+
++        m = t7101.talk_raw(CMD_CLUSTER_NODES)
+
++        nodes = []
+
++        for node_info in m.split('\n'):
+
++            if len(node_info) == 0:
+
++                continue
+
++            nodes.append(ClusterNode(*node_info.split(' ')))
+
++        self.assertEqual(2, len(nodes))
+
++        if nodes[0].port == 7100:
+
++            n7100, n7101 = nodes
+
++        else:
+
++            n7101, n7100 = nodes
+
++        self.assertEqual(16384, len(n7100.assigned_slots))
+
++        self.assertEqual(0, len(n7101.assigned_slots))
+
++
+
++        t7100.talk('cluster', 'setslot', 0, 'migrating', n7101.node_id)
+
++        comm.fix_migrating('127.0.0.1', 7100)
+
++        self.assertEqual('I am in slot 0', rc.get('h-893'))
+
++
+
++        comm.quit_cluster('127.0.0.1', 7101)
+
++        rc.delete('h-893')
+
++        comm.shutdown_cluster('127.0.0.1', 7100)
+
++
+
++        t7100.close()
+
++        t7101.close()

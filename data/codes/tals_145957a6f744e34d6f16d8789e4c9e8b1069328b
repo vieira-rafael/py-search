@@ -1,0 +1,30 @@
+@@ -1,12 +1,13 @@
++# Uber now has an [official API](https://developer.uber.com). Please use it instead #
+
++This will never be updated. Sorry folks! 
+
++
+
+ uber.py - a Python client for [Uber]
+
+ ------------------------------------
+
+ [![ubercli](http://tals.github.io/uber.py/images/ubercli.gif)](https://github.com/tals/uber.py/blob/master/examples/ubercli.py)
+
+ 
+
+ 
+
+ [![Build Status](https://secure.travis-ci.org/tals/uber.py.png?branch=master)](http://travis-ci.org/tals/uber.py)
+
+ 
+
+-####  UPDATE: Uber now has an [official API](https://developer.uber.com). Please use it instead  ####
+
+-
+
+ Usage example:
+
+ ```python
+
+ from uber import UberClient

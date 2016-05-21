@@ -1,0 +1,164 @@
+@@ -65,7 +65,7 @@ means migrate slot #0 #2 #4 #5 #6 #7 from `127.0.0.1:7000` to `127.0.0.1:7001`.
+     # start cluster on multiple nodes, all the slots will be shared among them
+
+     # the argument is a list of (HOST, PORT) tuples
+
+     # for example, the following call will start a cluster on 127.0.0.1:7000 and 127.0.0.1:7001
+
+-    redistrib.command.start_cluster([('127.0.0.1', 7000), ('127.0.0.1', 7001)])
+
++    redistrib.command.start_cluster_on_multi([('127.0.0.1', 7000), ('127.0.0.1', 7001)])
+
+ 
+
+     # add node 127.0.0.1:7001 to the cluster as a master
+
+     redistrib.command.join_cluster('127.0.0.1', 7000, '127.0.0.1', 7001)
+@@ -1 +1,2 @@
+-__version__ = '0.3.1'
+
++__version__ = '0.3.3'
+
++REPO = 'https://github.com/HunanTV/redis-trib.py'
+@@ -88,9 +88,6 @@ def close(self):
+ 
+
+ 
+
+ class ClusterNode(object):
+
+-    # What does each field mean in "cluster nodes" output
+
+-    # > http://oldblog.antirez.com/post/2-4-and-other-news.html
+
+-    # but it didn't list assigned slots / node_index
+
+ def __init__(self, node_id, latest_know_ip_address_and_port,
+
+ role_in_cluster, node_id_of_master_if_it_is_a_slave,
+
+ last_ping_sent_time, last_pong_received_time, node_index,
+@@ -137,19 +137,9 @@ def _migr_keys(src_talker, target_host, target_port, slot):
+         keys = src_talker.talk('cluster', 'getkeysinslot', slot, 10)
+
+ if len(keys) == 0:
+
+ return
+
+-        for k in keys:
+
+-            # Why 0, 15000 ? Just following existent codes
+
+-            # > https://github.com/antirez/redis/blob/3.0/src/redis-trib.rb
+
+-            # > #L784
+
+-            m = src_talker.talk('migrate', target_host, target_port, k,
+
+-                                0, 15000)
+
+-            # don't panic when one of the keys failed to migrate, log & retry
+
+-            if m.lower() != 'ok':
+
+-                logging.warning(
+
+-                    'Not OK while moving key [ %s ] in slot [ %d ]\n'
+
+-                    '  Source node - %s:%d => Target node - %s:%d\n'
+
+-                    'Got %s\nRetry later', k, slot, src_talker.host,
+
+-                    src_talker.port, target_host, target_port, m)
+
++        src_talker.talk(
+
++            *sum([['migrate', target_host, target_port, k, 0, 30000]
+
++                  for k in keys], []))
+
+ 
+
+ 
+
+ def _migr_slots(source_node, target_node, migrate_count, nodes):
+@@ -2,6 +2,7 @@
+ import logging
+
+ 
+
+ import command
+
++from . import __version__, REPO
+
+ 
+
+ 
+
+ def _parse_host_port(addr):
+@@ -64,9 +65,12 @@ def migrate_slots(src_host_port, dst_host_port, *slot_ranges):
+ 
+
+ 
+
+ def main():
+
++    print 'Redis-trib', __version__,
+
++    print 'Copyright (c) HunanTV Platform developers'
+
+ if len(sys.argv) < 2:
+
+ print >> sys.stderr, 'Usage:'
+
+ print >> sys.stderr, '    redis-trib.py ACTION_NAME [arg0 arg1 ...]'
+
++        print >> sys.stderr, 'Take a look at README for more details:', REPO
+
+         sys.exit(1)
+
+     logging.basicConfig(level=logging.INFO)
+
+ getattr(sys.modules[__name__], sys.argv[1])(*sys.argv[2:])
+@@ -1,19 +1,17 @@
+ from setuptools import setup
+
+ import redistrib
+
+ 
+
+-_URI = 'https://github.com/neuront/redis-trib.py'
+
+-
+
+ setup(
+
+ name='redis-trib',
+
+ version=redistrib.__version__,
+
+ author='Neuron Teckid',
+
+ author_email='lene13@gmail.com',
+
+ license='MIT',
+
+ keywords='Redis Cluster',
+
+-    url=_URI,
+
++    url=redistrib.REPO,
+
+ description='Redis Cluster tools in Python2',
+
+ packages=['redistrib'],
+
+-    long_description='Visit ' + _URI + ' for details please.',
+
++    long_description='Visit ' + redistrib.REPO + ' for details please.',
+
+ install_requires=[
+
+ 'hiredis',
+
+ 'retrying',

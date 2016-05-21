@@ -1,0 +1,1 @@
+"""Copyright (c) 2015 Russell HarkansonSee the file LICENSE.txt for copying permission."""

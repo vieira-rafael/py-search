@@ -1,0 +1,200 @@
+@@ -66,12 +66,16 @@ The program would check which slots are failed in the cluster which contains `12
+     import redistrib.command
+
+ 
+
+     # start cluster at node 127.0.0.1:7000
+
+-    redistrib.command.start_cluster('127.0.0.1', 7000)
+
++    # this API will run the "cluster addslots" command on the Redis server;
+
++    #   you can limit the number of slots added to the Redis in each command
+
++    #   by default, all 16384 slots are added at once
+
++    redistrib.command.start_cluster('127.0.0.1', 7000, max_slots=16384)
+
+ 
+
+     # start cluster on multiple nodes, all the slots will be shared among them
+
+-    # the argument is a list of (HOST, PORT) tuples
+
++    # the first argument is a list of (HOST, PORT) tuples
+
+     # for example, the following call will start a cluster on 127.0.0.1:7000 and 127.0.0.1:7001
+
+-    redistrib.command.start_cluster_on_multi([('127.0.0.1', 7000), ('127.0.0.1', 7001)])
+
++    # the second argument is the same as "max_slots" in "start_cluster" API
+
++    redistrib.command.start_cluster_on_multi([('127.0.0.1', 7000), ('127.0.0.1', 7001)], max_slots=16384)
+
+ 
+
+     # add node 127.0.0.1:7001 to the cluster as a master
+
+     redistrib.command.join_cluster('127.0.0.1', 7000, '127.0.0.1', 7001)
+@@ -1,2 +1,2 @@
+-__version__ = '0.4.0'
+
++__version__ = '0.4.1'
+
+ REPO = 'https://github.com/HunanTV/redis-trib.py'
+@@ -66,21 +66,31 @@ def _poll_check_status(t):
+ raise RedisStatusError('Unexpected status: %s' % m)
+
+ 
+
+ 
+
+-def start_cluster(host, port):
+
+-    with Talker(host, port) as t:
+
+-        _ensure_cluster_status_unset(t)
+
+-
+
+-        m = t.talk('cluster', 'addslots', *xrange(SLOT_COUNT))
+
++def _add_slots(t, begin, end, max_slots):
+
++    def addslots(t, begin, end):
+
++        m = t.talk('cluster', 'addslots', *xrange(begin, end))
+
+         logging.debug('Ask `cluster addslots` Rsp %s', m)
+
+ if m.lower() != 'ok':
+
+ raise RedisStatusError('Unexpected reply after ADDSLOTS: %s' % m)
+
+ 
+
++    i = begin + max_slots
+
++    while i < end:
+
++        addslots(t, begin, i)
+
++        begin = i
+
++        i += max_slots
+
++    addslots(t, begin, end)
+
++
+
++
+
++def start_cluster(host, port, max_slots=SLOT_COUNT):
+
++    with Talker(host, port) as t:
+
++        _ensure_cluster_status_unset(t)
+
++        _add_slots(t, 0, SLOT_COUNT, max_slots)
+
+         _poll_check_status(t)
+
+         logging.info('Instance at %s:%d started as a standalone cluster',
+
+                      host, port)
+
+ 
+
+ 
+
+-def start_cluster_on_multi(host_port_list):
+
++def start_cluster_on_multi(host_port_list, max_slots=SLOT_COUNT):
+
+     talkers = []
+
+ try:
+
+ for host, port in set(host_port_list):
+@@ -97,15 +107,13 @@ def start_cluster_on_multi(host_port_list):
+         slots_residue = SLOT_COUNT - slots_each * len(talkers)
+
+         first_node_slots = slots_residue + slots_each
+
+ 
+
+-        first_talker.talk('cluster', 'addslots', *xrange(first_node_slots))
+
++        _add_slots(first_talker, 0, first_node_slots, max_slots)
+
+         logging.info('Add %d slots to %s:%d', slots_residue + slots_each,
+
+                      first_talker.host, first_talker.port)
+
+ for i, t in enumerate(talkers[1:]):
+
+-            t.talk('cluster', 'addslots', *xrange(
+
+-                i * slots_each + first_node_slots,
+
+-                (i + 1) * slots_each + first_node_slots))
+
++            _add_slots(t, i * slots_each + first_node_slots,
+
++                       (i + 1) * slots_each + first_node_slots, max_slots)
+
+             logging.info('Add %d slots to %s:%d', slots_each, t.host, t.port)
+
+-
+
+ for t in talkers:
+
+             _poll_check_status(t)
+
+ finally:
+@@ -81,6 +81,23 @@ def test_api(self):
+ 
+
+ self.assertRaisesRegexp(ResponseError, 'CLUSTERDOWN .*', rc.get, 'key')
+
+ 
+
++    def test_start_with_max_slots_set(self):
+
++        comm.start_cluster('127.0.0.1', 7100, max_slots=7000)
+
++        rc = RedisCluster([{'host': '127.0.0.1', 'port': 7100}])
+
++        rc.set('key', 'value')
+
++        self.assertEqual('value', rc.get('key'))
+
++        rc.delete('key')
+
++        comm.shutdown_cluster('127.0.0.1', 7100)
+
++
+
++        comm.start_cluster_on_multi([('127.0.0.1', 7100), ('127.0.0.1', 7101)],
+
++                                    max_slots=7000)
+
++        rc = RedisCluster([{'host': '127.0.0.1', 'port': 7100}])
+
++        rc.set('key', 'value')
+
++        self.assertEqual('value', rc.get('key'))
+
++        rc.delete('key')
+
++        comm.quit_cluster('127.0.0.1', 7101)
+
++        comm.shutdown_cluster('127.0.0.1', 7100)
+
++
+
+ def test_start_multi(self):
+
+         comm.start_cluster_on_multi([('127.0.0.1', 7100), ('127.0.0.1', 7101)])
+
+         nodes = base.list_nodes('127.0.0.1', 7100)

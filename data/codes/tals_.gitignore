@@ -1,0 +1,7 @@
+*.py[cod]
+# C extensions*.so
+# Packages*.egg*.egg-infodistbuildeggspartsbinvarsdistdevelop-eggs.installed.cfgliblib64__pycache__
+# Installer logspip-log.txt
+# Unit test / coverage reports.coverage.toxnosetests.xml
+# Translations*.mo
+# Mr Developer.mr.developer.cfg.project.pydevproject

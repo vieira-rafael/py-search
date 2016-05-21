@@ -1,0 +1,48 @@
+@@ -16,7 +16,7 @@
+ 
+
+ setup(
+
+ name='uber.py',
+
+-    version='1.0.2',
+
++    version='1.0.3',
+
+ author='Tal Shiri',
+
+ author_email='eiopaa@gmail.com',
+
+ url='http://github.com/tals/uber.py',
+@@ -107,7 +107,7 @@ def test_login(self):
+             .should_receive('_send_message')
+
+             .with_args('Login', params={'password': '1122334455', 'email': 'aaa'})
+
+             .and_return({
+
+-                'token': '12345'
+
++                'client': {'token': '12345'}
+
+             })
+
+         )
+
+ 
+@@ -41,7 +41,7 @@ def login(cls, email, password):
+         }
+
+ 
+
+         response = uber_client._send_message(MessageTypes.LOGIN, params=data)
+
+-        return response['token']
+
++        return response['client']['token']
+
+ 
+
+ def delete_payment_profile(self, payment_profile):
+
+ """
