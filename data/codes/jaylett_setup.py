@@ -1,0 +1,3 @@
+# Use setuptools if we cantry: from setuptools.core import setupexcept ImportError: from distutils.core import setup
+PACKAGE = 'django_database_constraints'VERSION = '1.0'
+setup( name=PACKAGE, version=VERSION, description="Django library for more easily working with transactions and constraints in Forms, ModelForms and the Views that use them.", packages=[ 'django_database_constraints',    ], license='MIT', author='James Aylett', author_email='james@tartarus.org', install_requires=[ 'Django~=1.8.0',    ], url = 'https://github.com/jaylett/django-database-constraints', classifiers = [ 'Intended Audience :: Developers', 'Framework :: Django', 'License :: OSI Approved :: MIT License', 'Programming Language :: Python :: 2', 'Programming Language :: Python :: 3',    ],)

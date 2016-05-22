@@ -5,8 +5,8 @@ from nlp.preprocessing import PreProcessing
 
 
 def main():
-    #CodeCrawler()
-    PreProcessing()
+    CodeCrawler()
+    #PreProcessing()
 
 if __name__ == "__main__":
     main()

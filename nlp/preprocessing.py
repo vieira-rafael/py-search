@@ -1,4 +1,3 @@
-import nltk
 
 class PreProcessing:
 	def __init__(self):	

@@ -1,0 +1,2 @@
+from bs4 import BeautifulSoupimport urllib.request, urllib.error, urllib.parseimport reimport os
+def jpg(identifier, title="titre", firstpage=1, lastpage=1):    lastpage+=1    listpage = range(firstpage, lastpage) for page in listpage:        jpgfile = title + "_" + str(page) + ".jpg"        url = 'http://gallica.bnf.fr/iiif/ark:' + identifier + '/f' + str(page) + '/full/3000/0/native.jpg'        urllib.request.urlretrieve(url, jpgfile)   

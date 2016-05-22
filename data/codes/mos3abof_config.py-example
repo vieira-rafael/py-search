@@ -1,0 +1,6 @@
+from dateutil.rrule import SA, SU, MO, TU, WE, TH, FR
+# Toggl API TokenAPI_TOKEN             = 'ADD YOUR API TOKEN HERE'
+#Number PrecisionPRECISION             = 2
+# Target ConfigurationsWORKING_HOURS_PER_DAY = 8BUSINESS_DAYS         = (SA, SU, MO, TU, WE)WEEK_DAYS             = (SA, SU, MO, TU, WE, TH, FR)TOLERANCE_PERCENTAGE  = 0.1
+# TimezoneTIMEZONE              = '+02:00'
+# Salary ConfigurtionsSHOW_SALARY           = FalseSALARY                = 0

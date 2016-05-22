@@ -26,7 +26,7 @@ class CodeCrawler:
 
 			for row in file_wrap:
 				links = links + row.findAll('a', href = True)
-			
+
 			for link in links:
 				if ".py" in link['href']:
 					self.get_code(link['href'])
@@ -50,7 +50,7 @@ class CodeCrawler:
 
 	def __init__(self):
 		try:
-			for index in range(1,32):
+			for index in range(1,33):
 				__file__ = 'data/repos/page'+ str(index)
 				with open(__file__, 'r') as jsonfile:
 					for item in json.load(jsonfile)['items']:

@@ -1,5 +1,3 @@
-#!/usr/bin/env python## Copyright 2013 Rodrigo Ancavil del Pino## Licensed under the Apache License, Version 2.0 (the "License"); you may# not use this file except in compliance with the License. You may obtain# a copy of the License at## http://www.apache.org/licenses/LICENSE-2.0## Unless required by applicable law or agreed to in writing, software# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the# License for the specific language governing permissions and limitations# under the License.
-import distutils.core
-try: import setuptoolsexcept ImportError: pass
-packages=['tornado','pyconvert']
-distutils.core.setup( name='pyrestful', version = '0.4.2', packages=['pyrestful','demos'], author='Innovaser', author_email='rancavil@innovaser.cl', install_requires=packages)
+#!/usr/bin/env pythonfrom setuptools import setup
+# Put here required packages or# Uncomment one or more lines below in the install_requires section# for the specific client drivers/modules your application needs.
+setup(name='YourAppName', version='1.0', description='OpenShift Python-3.3 / Tornado Web Server based application', author='Your Name', author_email='admin@example.org', url='https://pypi.python.org/pypi',     )
